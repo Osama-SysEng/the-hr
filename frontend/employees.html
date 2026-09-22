@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The H.R - إدارة الموظفين</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#07111f;color:#f1f5f9;min-height:100vh}
+.sidebar{width:260px;background:#0a1929;border-right:1px solid rgba(255,255,255,0.08);padding:20px;position:fixed;height:100vh;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+.sidebar-logo .icon{width:40px;height:40px;background:linear-gradient(135deg,#00b4d8,#0077b6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.sidebar-logo h2{font-size:16px;font-weight:700}
+.sidebar-logo span{font-size:11px;color:#64748b}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#94a3b8;text-decoration:none;margin-bottom:2px;transition:all 0.2s}
+.nav-item:hover{background:#13294a;color:#f1f5f9}
+.nav-item.active{background:linear-gradient(135deg,rgba(0,180,216,0.15),rgba(0,119,182,0.1));color:#48cae4;border:1px solid rgba(0,180,216,0.2)}
+.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.nav-item .label{font-size:13px;font-weight:500}
+.nav-item .badge{margin-left:auto;background:#00b4d8;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.main{margin-left:260px;flex:1;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.header h1{font-size:22px;font-weight:700}
+.header-actions{display:flex;gap:10px}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#13294a;color:#94a3b8;transition:all 0.2s}
+.btn:hover{border-color:#00b4d8;color:#48cae4}
+.btn.primary{background:#00b4d8;color:#fff;border-color:#00b4d8}
+.btn.primary:hover{background:#0077b6}
+.search-bar{width:300px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0a1929;color:#f1f5f9;font-size:13px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px}
+.stat-card{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:15px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.blue::before{background:#00b4d8}
+.stat-card.green::before{background:#10b981}
+.stat-card.orange::before{background:#f59e0b}
+.stat-card.red::before{background:#ef4444}
+.stat-card.purple::before{background:#8b5cf6}
+.stat-card .stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:10px}
+.stat-card.blue .stat-icon{background:rgba(0,180,216,0.15);color:#48cae4}
+.stat-card.green .stat-icon{background:rgba(16,185,129,0.15);color:#10b981}
+.stat-card.orange .stat-icon{background:rgba(245,158,11,0.15);color:#f59e0b}
+.stat-card.red .stat-icon{background:rgba(239,68,68,0.15);color:#ef4444}
+.stat-card.purple .stat-icon{background:rgba(139,92,246,0.15);color:#a78bfa}
+.stat-card .stat-value{font-size:22px;font-weight:800;margin-bottom:4px}
+.stat-card .stat-label{font-size:11px;color:#64748b;font-weight:500}
+.stat-card .stat-change{font-size:10px;margin-top:6px;display:flex;align-items:center;gap:3px}
+.stat-change.up{color:#10b981}
+.stat-change.down{color:#ef4444}
+.table-container{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08)}
+.table-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 14px;text-align:right;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;background:#0a1929;border-bottom:1px solid rgba(255,255,255,0.08)}
+tbody td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.08);color:#94a3b8}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#13294a}
+tbody tr:hover td{color:#f1f5f9}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.status-badge.active{background:rgba(16,185,129,0.15);color:#10b981}
+.status-badge.pending{background:rgba(245,158,11,0.15);color:#f59e0b}
+.status-badge.terminated{background:rgba(239,68,68,0.15);color:#ef4444}
+.status-badge.probation{background:rgba(139,92,246,0.15);color:#a78bfa}
+.btn-sm{padding:4px 8px;border-radius:6px;font-size:10px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8}
+.btn-sm:hover{border-color:#00b4d8;color:#48cae4}
+.emp-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.emp-info{display:flex;flex-direction:column;min-width:0}
+.emp-name{font-weight:600;font-size:12px;color:#f1f5f9}
+.emp-email{font-size:10px;color:#64748b}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-logo">
+<div class="icon">HR</div>
+<div><h2>The H.R</h2><span>نظام الموارد البشرية</span></div>
+</div>
+<a class="nav-item active"><div class="icon" style="background:rgba(0,180,216,0.15);color:#48cae4;">👥</div><span class="label">الموظفين</span><span class="badge">147</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(16,185,129,0.15);color:#10b981;">⏰</div><span class="label">الحضور</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">💰</div><span class="label">الرواتب</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">🎯</div><span class="label">التوظيف</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📦</div><span class="label">المخزن</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📈</div><span class="label">التحليلات</span></a>
+<a class="nav-item" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.08);padding-top:15px;"><div class="icon" style="background:rgba(100,116,139,0.15);color:#64748b;">⚙️</div><span class="label">الإعدادات</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(100,116,139,0.15);color:#64748b;">👤</div><span class="label">الملف الشخصي</span></a>
+</div>
+<main class="main">
+<div class="header">
+<h1>👥 إدارة الموظفين</h1>
+<div class="header-actions">
+<input class="search-bar" type="text" placeholder="بحث عن موظف...">
+<button class="btn primary">➕ إضافة موظف</button>
+</div>
+</div>
+<div class="stats-grid">
+<div class="stat-card blue"><div class="stat-icon">👥</div><div class="stat-value">147</div><div class="stat-label">إجمالي الموظفين</div><div class="stat-change up">↑ +3 هذا الشهر</div></div>
+<div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value">142</div><div class="stat-label">نشطين</div><div class="stat-change up">↑ 1 جديد</div></div>
+<div class="stat-card orange"><div class="stat-icon">📋</div><div class="stat-value">3</div><div class="stat-label">في إجازة</div><div class="stat-change" style="color:#64748b;">لا تغيير</div></div>
+<div class="stat-card red"><div class="stat-icon">🔴</div><div class="stat-value">2</div><div class="stat-label">تم إنهاء الخدمة</div><div class="stat-change down">↑ موظف جديد</div></div>
+<div class="stat-card purple"><div class="stat-icon">📊</div><div class="stat-value">8</div><div class="stat-label">الأقسام</div><div class="stat-change up">↑ قسم جديد</div></div>
+</div>
+<div class="table-container">
+<div class="table-header">
+<h3>جميع الموظفين (147)</h3>
+<div style="display:flex;gap:8px;">
+<button class="btn">🔍 بحث متقدم</button>
+<button class="btn">📥 استيراد</button>
+<button class="btn primary">📊 تقرير</button>
+</div>
+</div>
+<table>
+<thead><tr><th>#</th><th>الموظف</th><th>القسم</th><th>الوظيفة</th><th>التاريخ</th><th>الراتب</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#00b4d8,#0077b6);">أ</div><div class="emp-info"><div class="emp-name">أحمد محمد</div><div class="emp-email">ahmed.m@company.com</div></div></td><td>تطوير البرمجيات</td><td>Senior Backend Developer</td><td>15/03/2023</td><td>18,000 EGP</td><td><span class="status-badge active">نشط</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>2</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);">س</div><div class="emp-info"><div class="emp-name">سارة علي</div><div class="emp-email">sara.ali@company.com</div></div></td><td>التصميم</td><td>Senior UI/UX Designer</td><td>22/06/2022</td><td>15,000 EGP</td><td><span class="status-badge active">نشطة</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>3</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">م</div><div class="emp-info"><div class="emp-name">محمد صلاح</div><div class="emp-email">mohamed.salah@company.com</div></div></td><td>المبيعات والتسويق</td><td>Sales Manager</td><td>10/01/2021</td><td>10,000 EGP</td><td><span class="status-badge active">نشط</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>4</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#10b981,#34d399);">خ</div><div class="emp-info"><div class="emp-name">خالد عبد الله</div><div class="emp-email">khaled.abdel@company.com</div></div></td><td>الدعم الفني</td><td>IT Support Lead</td><td>05/09/2022</td><td>12,000 EGP</td><td><span class="status-badge active">نشط</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>5</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#ef4444,#f87171);">ن</div><div class="emp-info"><div class="emp-name">نور هاني</div><div class="emp-email">nour.hani@company.com</div></div></td><td>التسويق</td><td>Marketing Specialist</td><td>18/04/2024</td><td>8,000 EGP</td><td><span class="status-badge pending">على إجازة</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>6</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#ec4899,#f472b6);">إ</div><div class="emp-info"><div class="emp-name">إبراهيم فاروق</div><div class="emp-email">ibrahim.farooq@company.com</div></div></td><td>تطوير البرمجيات</td><td>Backend Developer</td><td>01/11/2023</td><td>14,000 EGP</td><td><span class="status-badge active">نشط</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>7</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#14b8a6,#2dd4bf);">م</div><div class="emp-info"><div class="emp-name">مريم حسن</div><div class="emp-email">maryam.hassan@company.com</div></div></td><td>الموارد البشرية</td><td>HR Specialist</td><td>15/02/2024</td><td>9,000 EGP</td><td><span class="status-badge active">نشطة</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>8</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#f97316,#fb923c);">ع</div><div class="emp-info"><div class="emp-name">علي عبد الله</div><div class="emp-email">ali.abdel@company.com</div></div></td><td>الدعم الفني</td><td>Technical Support</td><td>20/07/2023</td><td>7,000 EGP</td><td><span class="status-badge active">نشط</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>9</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#6366f1,#818cf8);">ف</div><div class="emp-info"><div class="emp-name">فاطمة حمدي</div><div class="emp-email">fatma.hamdi@company.com</div></div></td><td>تطوير البرمجيات</td><td>Frontend Developer</td><td>01/08/2024</td><td>11,000 EGP</td><td><span class="status-badge active">نشطة</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+<tr><td>10</td><td><div class="emp-avatar" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);">ط</div><div class="emp-info"><div class="emp-name">طمثان شحاتة</div><div class="emp-email">tamer.shatta@company.com</div></div></td><td>المبيعات والتسويق</td><td>Sales Executive</td><td>10/03/2022</td><td>9,500 EGP</td><td><span class="status-badge active">نشط</span></td><td><button class="btn-sm">👁️</button><button class="btn-sm">✏️</button><button class="btn-sm">📄</button></td></tr>
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>

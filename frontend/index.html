@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The H.R - لوحة تحكم النظام الكامل</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg-primary: #07111f;
+    --bg-secondary: #0a1929;
+    --bg-card: #0d2137;
+    --bg-hover: #13294a;
+    --accent: #00b4d8;
+    --accent-light: #48cae4;
+    --accent-dark: #0077b6;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --border: rgba(255,255,255,0.08);
+    --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ---------- LAYOUT ---------- */
+  .dashboard {
+    display: flex;
+    height: 100vh;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar {
+    width: 280px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .sidebar-logo .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; color: #fff;
+    box-shadow: 0 0 20px rgba(0,180,216,0.3);
+  }
+  .sidebar-logo .logo-text h2 { font-size: 18px; font-weight: 700; }
+  .sidebar-logo .logo-text span { font-size: 11px; color: var(--text-muted); }
+  
+  .nav-section {
+    margin-bottom: 12px;
+  }
+  .nav-section-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); padding: 8px 12px 6px;
+    font-weight: 600;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 2px;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(0,180,216,0.15), rgba(0,119,182,0.1));
+    color: var(--accent-light);
+    border: 1px solid rgba(0,180,216,0.2);
+  }
+  .nav-item .icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .nav-item .label { font-size: 13px; font-weight: 500; }
+  .nav-item .badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  /* ---------- MAIN ---------- */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .topbar {
+    padding: 15px 25px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar h1 { font-size: 20px; font-weight: 700; }
+  .topbar-right {
+    display: flex; align-items: center; gap: 15px;
+  }
+  .topbar-user {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+  }
+  .user-info { text-align: left; }
+  .user-info .name { font-size: 13px; font-weight: 600; }
+  .user-info .role { font-size: 11px; color: var(--text-muted); }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 25px;
+  }
+
+  /* ---------- CARDS ---------- */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 20px;
+  }
+  .page-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 5px; }
+  .page-header p { color: var(--text-secondary); font-size: 13px; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .stat-card.blue::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--success); }
+  .stat-card.orange::before { background: var(--warning); }
+  .stat-card.red::before { background: var(--danger); }
+  .stat-card.purple::before { background: #8b5cf6; }
+  .stat-card .stat-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  .stat-card.blue .stat-icon { background: rgba(0,180,216,0.15); color: var(--accent-light); }
+  .stat-card.green .stat-icon { background: rgba(16,185,129,0.15); color: var(--success); }
+  .stat-card.orange .stat-icon { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .stat-card.red .stat-icon { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .stat-card.purple .stat-icon { background: rgba(139,92,246,0.15); color: #a78bfa; }
+  .stat-card .stat-value {
+    font-size: 26px; font-weight: 800; margin-bottom: 4px;
+  }
+  .stat-card .stat-label {
+    font-size: 12px; color: var(--text-muted); font-weight: 500;
+  }
+  .stat-card .stat-change {
+    font-size: 11px; margin-top: 8px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .stat-change.up { color: var(--success); }
+  .stat-change.down { color: var(--danger); }
+
+  /* ---------- TABS ---------- */
+  .tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    background: var(--bg-card);
+    padding: 4px;
+    border-radius: 10px;
+    width: fit-content;
+  }
+  .tab {
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .tab:hover:not(.active) { color: var(--text-primary); }
+
+  /* ---------- TABLES ---------- */
+  .table-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-header h3 { font-size: 14px; font-weight: 600; }
+  .table-header .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent-light); }
+  .btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: var(--accent-dark); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    padding: 12px 15px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 12px 15px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-hover); }
+  tbody tr:hover td { color: var(--text-primary); }
+
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-badge.active { background: rgba(16,185,129,0.15); color: var(--success); }
+  .status-badge.pending { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .status-badge.rejected { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .status-badge.approved { background: rgba(16,185,129,0.15); color: var(--success); }
+  .status-badge.screening { background: rgba(0,180,216,0.15); color: var(--accent-light); }
+  .status-badge.hired { background: rgba(139,92,246,0.15); color: #a78bfa; }
+
+  .score-ring {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    position: relative;
+  }
+  .score-ring::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--bg-card);
+  }
+  .score-ring .score-value {
+    position: relative; z-index: 1;
+  }
+  .score-ring.high { background: conic-gradient(var(--success) 0%, var(--success) 100%, transparent 100%); color: var(--success); }
+  .score-ring.medium { background: conic-gradient(var(--warning) 0%, var(--warning) 60%, transparent 60%); color: var(--warning); }
+  .score-ring.low { background: conic-gradient(var(--danger) 0%, var(--danger) 40%, transparent 40%); color: var(--danger); }
+
+  /* ---------- MODULE VIEWS ---------- */
+  .module-view {
+    display: none;
+    height: calc(100vh - 120px);
+  }
+  .module-view.active { display: flex; flex-direction: column; }
+
+  .module-header {
+    padding: 15px 20px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .module-header h3 { font-size: 15px; font-weight: 600; }
+  .module-header .module-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    margin-right: 10px;
+  }
+
+  .module-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  /* Attendance specific */
+  .attendance-clock {
+    display: flex; align-items: center; gap: 30px;
+    padding: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .clock-display {
+    text-align: center;
+    padding: 20px 30px;
+    background: linear-gradient(135deg, rgba(0,180,216,0.1), rgba(0,119,182,0.05));
+    border: 1px solid rgba(0,180,216,0.2);
+    border-radius: 14px;
+  }
+  .clock-time {
+    font-size: 48px; font-weight: 800;
+    color: var(--accent-light);
+    font-family: 'Courier New', monospace;
+  }
+  .clock-date { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .clock-stat {
+    text-align: center;
+    margin-left: 30px;
+  }
+  .clock-stat .value { font-size: 28px; font-weight: 700; }
+  .clock-stat .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+
+  /* Payroll card */
+  .payroll-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .payroll-card h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .payroll-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .payroll-row:last-child { border-bottom: none; }
+  .payroll-row .label { font-size: 13px; color: var(--text-secondary); }
+  .payroll-row .value { font-size: 13px; font-weight: 600; }
+  .payroll-row.total { border-top: 2px solid var(--accent); margin-top: 8px; padding-top: 12px; }
+  .payroll-row.total .label { font-weight: 700; color: var(--text-primary); font-size: 14px; }
+  .payroll-row.total .value { font-size: 18px; font-weight: 800; color: var(--accent-light); }
+
+  /* Recruitment pipeline */
+  .pipeline {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .pipeline-step {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+  }
+  .pipeline-step .count { font-size: 28px; font-weight: 800; }
+  .pipeline-step .label { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+  .pipeline-step.new { border-top: 3px solid var(--text-muted); }
+  .pipeline-step.screening { border-top: 3px solid var(--accent); }
+  .pipeline-step.interview { border-top: 3px solid var(--warning); }
+  .pipeline-step.hired { border-top: 3px solid var(--success); }
+
+  .chart-placeholder {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    height: 200px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    gap: 8px;
+  }
+  .chart-placeholder .chart-bars {
+    display: flex; align-items: flex-end;
+    gap: 8px;
+    height: 100px;
+  }
+  .chart-bar {
+    width: 30px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(to top, var(--accent-dark), var(--accent-light));
+    min-height: 10px;
+  }
+
+  /* Supply chain */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+
+  /* Employee portal */
+  .ep-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 15px;
+  }
+  .ep-card h4 {
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ep-card h4 .ep-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .ep-card ul { list-style: none; }
+  .ep-card ul li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ep-card ul li:last-child { border-bottom: none; }
+  .ep-card ul li .ep-status {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-left: auto;
+  }
+  .ep-card ul li .ep-status.green { background: var(--success); }
+  .ep-card ul li .ep-status.yellow { background: var(--warning); }
+  .ep-card ul li .ep-status.blue { background: var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { width: 70px; }
+    .sidebar .logo-text, .sidebar .nav-item .label, .sidebar .nav-item .badge, .sidebar .nav-section-title { display: none; }
+    .sidebar .nav-item { justify-content: center; padding: 10px; }
+    .sidebar .nav-item .icon { margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">HR</div>
+      <div class="logo-text">
+        <h2>The H.R</h2>
+        <span>AI HR Operating System</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">الرئيسية</div>
+      <a class="nav-item active" data-page="dashboard">
+        <div class="icon" style="background:rgba(0,180,216,0.15);color:var(--accent-light);">📊</div>
+        <span class="label">لوحة التحكم</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">إدارة الموظفين</div>
+      <a class="nav-item" data-page="employees">
+        <div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">👥</div>
+        <span class="label">الموظفين</span>
+        <span class="badge">142</span>
+      </a>
+      <a class="nav-item" data-page="departments">
+        <div class="icon" style="background:rgba(16,185,129,0.15);color:var(--success);">🏢</div>
+        <span class="label">الأقسام</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">الحضور والانصراف</div>
+      <a class="nav-item" data-page="attendance">
+        <div class="icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">⏰</div>
+        <span class="label">الحضور اليوم</span>
+        <span class="badge" style="background:var(--warning);">الآني</span>
+      </a>
+      <a class="nav-item" data-page="attendance-history">
+        <div class="icon" style="background:rgba(0,180,216,0.15);color:var(--accent-light);">📋</div>
+        <span class="label">سجلات الحضور</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">الرواتب والأجور</div>
+      <a class="nav-item" data-page="payroll">
+        <div class="icon" style="background:rgba(239,68,68,0.15);color:var(--danger);">💰</div>
+        <span class="label">الرواتب</span>
+        <span class="badge" style="background:var(--danger);">شهرية</span>
+      </a>
+      <a class="nav-item" data-page="payslips">
+        <div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">📄</div>
+        <span class="label">كشوف الرواتب</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">التوظيف والHR</div>
+      <a class="nav-item" data-page="recruitment">
+        <div class="icon" style="background:rgba(16,185,129,0.15);color:var(--success);">🎯</div>
+        <span class="label">التوظيف</span>
+        <span class="badge" style="background:var(--success);">نشط</span>
+      </a>
+      <a class="nav-item" data-page="candidates">
+        <div class="icon" style="background:rgba(0,180,216,0.15);color:var(--accent-light);">👤</div>
+        <span class="label">المرشحين</span>
+        <span class="badge">23</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">المخزن وسلسلة التوريد</div>
+      <a class="nav-item" data-page="inventory">
+        <div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">📦</div>
+        <span class="label">المخزن</span>
+      </a>
+      <a class="nav-item" data-page="purchase-orders">
+        <div class="icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">🛒</div>
+        <span class="label">أوامر الشراء</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">التحليلات</div>
+      <a class="nav-item" data-page="analytics">
+        <div class="icon" style="background:rgba(239,68,68,0.15);color:var(--danger);">📈</div>
+        <span class="label">التحليلات</span>
+      </a>
+      <a class="nav-item" data-page="predictions">
+        <div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">🔮</div>
+        <span class="label">التنبؤات بالذكاء الاصطناعي</span>
+      </a>
+    </div>
+
+    <div class="nav-section" style="margin-top:auto;border-top:1px solid var(--border);padding-top:15px;">
+      <a class="nav-item" data-page="settings">
+        <div class="icon" style="background:rgba(100,116,139,0.15);color:var(--text-muted);">⚙️</div>
+        <span class="label">الإعدادات</span>
+      </a>
+      <a class="nav-item" data-page="profile">
+        <div class="icon" style="background:rgba(100,116,139,0.15);color:var(--text-muted);">👤</div>
+        <span class="label">ملفي الشخصي</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="main">
+    <div class="topbar">
+      <h1 id="page-title">لوحة التحكم</h1>
+      <div class="topbar-right">
+        <div style="width:1px;height:24px;background:var(--border);"></div>
+        <div class="topbar-user">
+          <div class="avatar">أ</div>
+          <div class="user-info">
+            <div class="name">أوسمة محمد</footer>
+            <div class="role">مدير النظام - Super Admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== PAGE 1: DASHBOARD ===== -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <h2>مرحباً بك في The H.R</h2>
+          <p>نظرة شاملة على جميع أنشطة организации اليوم</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">147</div>
+            <div class="stat-label">إجمالي الموظفين</div>
+            <div class="stat-change up">↑ +3 هذا الشهر</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">94%</div>
+            <div class="stat-label">معدل الحضور اليوم</div>
+            <div class="stat-change up">↑ +2% من الأمس</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value">128,500</div>
+            <div class="stat-label">إجمالي الرواتب هذا الشهر (EGP)</div>
+            <div class="stat-change up">↑ +5,200</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-value">12</div>
+            <div class="stat-label">وظائف شاغرة</div>
+            <div class="stat-change" style="color:var(--text-muted);">84 مرشح مبتشر</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value">8</div>
+            <div class="stat-label">منخفض المخزون</div>
+            <div class="stat-change down">↑ 3 جديدة اليوم</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">📋</div>
+            <div class="stat-value">3</div>
+            <div class="stat-label">طلبات إجازة معلقة</div>
+            <div class="stat-change" style="color:var(--text-muted);">في انتظار المراجعة</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="switchDashboardTab('overview')">نظرة عامة</button>
+          <button class="tab" onclick="switchDashboardTab('attendance')">الحضور</button>
+          <button class="tab" onclick="switchDashboardTab('payroll')">الرواتب</button>
+          <button class="tab" onclick="switchDashboardTab('recruitment')">التوظيف</button>
+          <button class="tab" onclick="switchDashboardTab('inventory')">المخزن</button>
+        </div>
+
+        <!-- Dashboard Tab: Overview -->
+        <div id="dash-overview">
+          <div class="grid-2" style="margin-bottom:15px;">
+            <div class="stat-card blue" style="padding:20px;">
+              <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">معدل الحضور - آخر 7 أيام</h4>
+              <div class="chart-bars">
+                <div class="chart-bar" style="height:70px;"></div>
+                <div class="chart-bar" style="height:85px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+                <div class="chart-bar" style="height:78px;"></div>
+                <div class="chart-bar" style="height:92px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+                <div class="chart-bar" style="height:88px;"></div>
+                <div class="chart-bar" style="height:95px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+                <div class="chart-bar" style="height:94px;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:8px;">
+                <span>السبت</span><span>الأحد</span><span>الإثنين</span><span>الثلاثاء</span><span>الأربعاء</span><span>الخميس</span><span>الجمعة</span>
+              </div>
+            </div>
+            <div class="stat-card green" style="padding:20px;">
+              <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">الم节课ات القادمة (الأسبوع)</h4>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;">
+                  <span style="color:var(--text-secondary);">إجادة الم 솔라</span>
+                  <span style="color:var(--text-primary);font-weight:600;">5 موظفين</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;">
+                  <span style="color:var(--text-secondary);">إجادة الم طارق</span>
+                  <span style="color:var(--text-primary);font-weight:600;">3 موظفين</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;">
+                  <span style="color:var(--text-secondary);">إجادة الم حمزة</span>
+                  <span style="color:var(--text-primary);font-weight:600;">2 موظفين</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="table-container" style="height:300px;overflow-y:auto;">
+              <div class="table-header">
+                <h3>📋 الطلبات المعلقة</h3>
+                <button class="btn">عرض الكل</button>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>النوع</th><th>الموظف</th><th>تاريخ</th><th>الحالة</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="status-badge pending">إجازة</span></td>
+                    <td>أحمد محمد - تطوير البرمجيات</td>
+                    <td>15/11/2026</td>
+                    <td><span class="status-badge pending">معلقة</span></td>
+                  </tr>
+                  <tr>
+                    <td><span class="status-badge pending">تقديم</span></td>
+                    <td>سارة علي - التصميم</span>
+                    <td>14/11/2026</td>
+                    <td><span class="status-badge pending">معلقة</span></td>
+                  </tr>
+                  <tr>
+                    <td><span class="status-badge pending">قرض</span></td>
+                    <td>محمد صلاح - المبيعات</td>
+                    <td>13/11/2026</td>
+                    <td><span class="status-badge pending">معلقة</span></td>
+                  </tr>
+                  <tr>
+                    <td><span class="status-badge pending">إجازة</span></td>
+                    <td> 외의 - التسويق</td>
+                    <td>12/11/2026</td>
+                    <td><span class="status-badge approved">ины</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-container" style="height:300px;overflow-y:auto;">
+              <div class="table-header">
+                <h3>🎯 المرشحينالجدد</h3>
+                <button class="btn">عرض الكل</button>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>الاسم</th><th>الوظيفة</th><th>الدرجة</th><th>الحالة</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>إبراهيم فاروق</td>
+                    <td>مطورバックエンド</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring high"><span class="score-value">87%</span></div>
+                        <span style="font-weight:600;">87%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge screening">فحص</span></td>
+                  </tr>
+                  <tr>
+                    <td>نور هاني</td>
+                    <td>مصمم واجهات</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring high"><span class="score-value">92%</span></div>
+                        <span style="font-weight:600;">92%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge screening">فحص</span></td>
+                  </tr>
+                  <tr>
+                    <td>علي عبد الله</td>
+                    <td>مهندس DevOps</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring medium"><span class="score-value">68%</span></div>
+                        <span style="font-weight:600;">68%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge rejected">رفض</span></td>
+                  </tr>
+                  <tr>
+                    <td>مريم حسن</td>
+                    <td>محللة بيانات</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring high"><span class="score-value">78%</span></div>
+                        <span style="font-weight:600;">78%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge screening">فحص</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Tab: Attendance -->
+        <div id="dash-attendance" style="display:none;">
+          <div class="attendance-clock">
+            <div class="clock-display">
+              <div class="clock-time" id="clock-time">14:32:17</div>
+              <div class="clock-date" id="clock-date">الخميس, 21 نوفمبر 2026</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:15px;">
+              <div class="clock-stat">
+                <div class="value" style="color:var(--success);">94%</div>
+                <div class="label">معدل الحضور اليوم</div>
+              </div>
+              <div class="clock-stat">
+                <div class="value" style="color:var(--text-primary);">138</div>
+                <div class="label">الملفون الحاضرين</div>
+              </div>
+              <div class="clock-stat">
+                <div class="value" style="color:var(--danger);">5</div>
+                <div class="label">الملفون الغائبين</div>
+              </div>
+              <div class="clock-stat">
+                <div class="value" style="color:var(--warning);">4</div>
+                <div class="label">متأخرين</div>
+              </div>
+            </div>
+          </div>
+          <div class="table-container" style="margin-top:15px;max-height:400px;overflow-y:auto;">
+            <div class="table-header">
+              <h3>سجلات الحضور - اليوم</h3>
+            </div>
+            <table>
+              <thead>
+                <tr><th>الموظف</th><th>القسم</th><th>تسجيل الدخول</th><th>تسجيل الخروج</th><th>الساعات</th><th>الحالة</th><th>التوقيع</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>أحمد محمد</td>
+                  <td>تطوير البرمجيات</td>
+                  <td style="color:var(--success);font-weight:600;">08:42 AM</td>
+                  <td style="color:var(--text-muted);">--:-- --</td>
+                  <td>08h 30m</td>
+                  <td><span class="status-badge active">حاضر</span></td>
+                  <td><span style="color:var(--success);">✓</span></td>
+                </tr>
+                <tr>
+                  <td>سارة علي</td>
+                  <td>التصميم</td>
+                  <td style="color:var(--success);font-weight:600;">09:05 AM</td>
+                  <td style="color:var(--text-muted);">--:-- --</td>
+                  <td>07h 57m</td>
+                  <td><span class="status-badge active">حاضرة</span></td>
+                  <td><span style="color:var(--success);">✓</span></td>
+                </tr>
+                <tr>
+                  <td>محمد صلاح</td>
+                  <td>المبيعات</td>
+                  <td style="color:var(--warning);font-weight:600;">09:35 AM</td>
+                  <td style="color:var(--text-muted);">--:-- --</td>
+                  <td>07h 27m</td>
+                  <td><span class="status-badge pending">متأخر</span></td>
+                  <td><span style="color:var(--success);">✓</span></td>
+                </tr>
+                <tr>
+                  <td>خالد عبد الله</td>
+                  <td>الدعم الفني</td>
+                  <td style="color:var(--success);font-weight:600;">08:30 AM</td>
+                  <td style="color:var(--text-muted);">--:-- --</td>
+                  <td>08h 32m</td>
+                  <td><span class="status-badge active">حاضر</span></td>
+                  <td><span style="color:var(--success);">✓</span></td>
+                </tr>
+                <tr>
+                  <td>之外--</td>
+                  <td>التسويق</td>
+                  <td style="color:var(--danger);font-weight:600;">---:---</td>
+                  <td style="color:var(--text-muted);">---:---</td>
+                  <td>0h 00m</td>
+                  <td><span class="status-badge rejected">غائب</span></td>
+                  <td><span style="color:var(--danger);">✗</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Dashboard Tab: Payroll -->
+        <div id="dash-payroll" style="display:none;">
+          <div class="stat-card blue" style="padding:20px;margin-bottom:15px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">ملخص الرواتب - نوفمبر 2026</h4>
+            <div class="payroll-row">
+              <span class="label">إجمالي عدد الموظفين</span>
+              <span class="value">147 موظف</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">إجمالي الرواتب (أساسي)</span>
+              <span class="value">89,400 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">الم Allowences (إجمالي)</span>
+              <span class="value">18,200 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">الساعات الإضافية</span>
+              <span class="value">2,900 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">الخ intram hoteling Egyptian Insurance</span>
+              <span class="value" style="color:var(--danger);">-9,834 EGP</span>
+            </div>
+            <div class="payroll-row total">
+              <span class="label">صافي الرواتب (إجمالي)</span>
+              <span class="value">128,500 EGP</span>
+            </div>
+            <div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--border);">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);">
+                <span>حساب سابقًا</span>
+                <span style="color:var(--text-primary);font-weight:600;">0 من 147</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:5px;">
+                <span>في انتظار الدفع</span>
+                <span style="color:var(--warning);font-weight:600;">12 موظف</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:5px;">
+                <span>تم الدفع</span>
+                <span style="color:var(--success);font-weight:600;">135 موظف</span>
+              </div>
+            </div>
+          </div>
+          <div class="table-container" style="max-height:350px;overflow-y:auto;">
+            <div class="table-header">
+              <h3>أعلى 5 رواتب هذا الشهر</h3>
+            </div>
+            <table>
+              <thead>
+                <tr><th>الموظف</th><th>القسم</th><th>الراتب الأساسي</th><th>الإجمالي</th><th>الحالة</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>أحمد محمد</td>
+                  <td>تطوير البرمجيات</td>
+                  <td>18,000 EGP</td>
+                  <td style="font-weight:700;color:var(--accent-light);">22,500 EGP</td>
+                  <td><span class="status-badge approved">مدفوع</span></td>
+                </tr>
+                <tr>
+                  <td>سارة علي</td>
+                  <td>التصميم</td>
+                  <td>15,000 EGP</td>
+                  <td style="font-weight:700;color:var(--accent-light);">18,750 EGP</td>
+                  <td><span class="status-badge approved">مدفوع</span></td>
+                </tr>
+                <tr>
+                  <td>خالد عبد الله</td>
+                  <td>الدعم الفني</td>
+                  <td>12,000 EGP</td>
+                  <td style="font-weight:700;color:var(--accent-light);">14,800 EGP</td>
+                  <td><span class="status-badge approved">مدفوع</span></td>
+                </tr>
+                <tr>
+                  <td>محمد صلاح</td>
+                  <td>المبيعات</td>
+                  <td>10,000 EGP</td>
+                  <td style="font-weight:700;color:var(--accent-light);">12,400 EGP</td>
+                  <td><span class="status-badge pending">في الانتظار</span></td>
+                </tr>
+                <tr>
+                  <td>之外--</td>
+                  <td>التسويق</td>
+                  <td>8,000 EGP</td>
+                  <td style="font-weight:700;color:var(--accent-light);">10,200 EGP</td>
+                  <td><span class="status-badge approved">مدفوع</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Dashboard Tab: Recruitment -->
+        <div id="dash-recruitment" style="display:none;">
+          <div class="pipeline">
+            <div class="pipeline-step new">
+              <div class="count" style="color:var(--text-muted);">23</div>
+              <div class="label">طلبات جديدة</div>
+            </div>
+            <div class="pipeline-step screening">
+              <div class="count" style="color:var(--accent-light);">38</div>
+              <div class="label">قيد الفحص بالذكاء الاصطناعي</div>
+            </div>
+            <div class="pipeline-step interview">
+              <div class="count" style="color:var(--warning);">12</div>
+              <div class="label">مقابلات آلية</div>
+            </div>
+            <div class="pipeline-step hired">
+              <div class="count" style="color:var(--success);">7</div>
+              <div class="label">تم التوظيف</div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="table-container" style="height:300px;overflow-y:auto;">
+              <div class="table-header">
+                <h3>🏆 أعلى 5 مرشحين</h3>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>#</th><th>الاسم</th><th>الوظيفة</th><th>الدرجة</th><th>مرحلة</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td>نور هاني</td>
+                    <td>مصمم واجهات</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring high"><span class="score-value">94%</span></div>
+                        <span style="font-weight:700;color:var(--success);">94%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge hired">تم التوظيف</span></td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td>إبراهيم فاروق</td>
+                    <td>مطورバックエンド</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring high"><span class="score-value">87%</span></div>
+                        <span style="font-weight:700;color:var(--success);">87%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge screening">فحص</span></td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td>مريم حسن</td>
+                    <td>محللة بيانات</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring high"><span class="score-value">78%</span></div>
+                        <span style="font-weight:700;color:var(--success);">78%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge interview">مقابلة</span></td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td>علي عبد الله</td>
+                    <td>مهندس DevOps</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring medium"><span class="score-value">68%</span></div>
+                        <span style="font-weight:700;color:var(--warning);">68%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge rejected">رفض</span></td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td>فاطمة حمدi</td>
+                    <td>مطورフロントエンド</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="score-ring high"><span class="score-value">82%</span></div>
+                        <span style="font-weight:700;color:var(--success);">82%</span>
+                      </div>
+                    </td>
+                    <td><span class="status-badge screening">فحص</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="chart-placeholder">
+              <h4 style="color:var(--text-primary);font-size:13px;margin-bottom:15px;">مواقع المرشحين الجغرافية</h4>
+              <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;color:var(--text-secondary);">
+                <div style="display:flex;justify-content:space-between;">
+                  <span>القاهرة</span>
+                  <span style="font-weight:600;color:var(--accent-light);">45%</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                  <span>الإسكندرية</span>
+                  <span style="font-weight:600;color:var(--accent-light);">18%</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                  <span>الجنوب</span>
+                  <span style="font-weight:600;color:var(--accent-light);">12%</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                  <span>المنيا</span>
+                  <span style="font-weight:600;color:var(--accent-light);">8%</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                  <span>الEiتب</span>
+                  <span style="font-weight:600;color:var(--accent-light);">17%</span>
+                </div>
+              </div>
+            </div
+          </div>
+        </div>
+
+        <!-- Dashboard Tab: Inventory -->
+        <div id="dash-inventory" style="display:none;">
+          <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+            <div class="stat-card purple">
+              <div class="stat-icon">📦</div>
+              <div class="stat-value">1,247</div>
+              <div class="stat-label">إجمالي المنتجات</div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-icon">📊</div>
+              <div class="stat-value">8,540</div>
+              <div class="stat-label">الكمية الإجمالية</div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-icon">⚠️</div>
+              <div class="stat-value">23</div>
+              <div class="stat-label">منخفضة المخزون</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-icon">💰</div>
+              <div class="stat-value">456K</div>
+              <div class="stat-label">قيمة المخزن (EGP)</div>
+            </div>
+          </div>
+          <div class="table-container" style="max-height:350px;overflow-y:auto;">
+            <div class="table-header">
+              <h3>المنتجات - رصيد Current</h3>
+            </div>
+            <table>
+              <thead>
+                <tr><th>SKU</th><th>المنتج</th><th>الفئة</th><th>الكمية</th><th>سعر الشراء</th><th>قيمة</th><th>الحالة</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>P-001</td>
+                  <td>شاشات LED 24"</td>
+                  <td>إلكترونيات</td>
+                  <td style="font-weight:600;">120</td>
+                  <td>3,200 EGP</td>
+                  <td style="font-weight:600;">384,000 EGP</td>
+                  <td><span class="status-badge active">كافي</span></td>
+                </tr>
+                <tr>
+                  <td>P-002</td>
+                  <td>لابتوبات Dell XPS</td>
+                  <td>إلكترونيات</td>
+                  <td style="font-weight:600;">45</td>
+                  <td>18,000 EGP</td>
+                  <td style="font-weight:600;">810,000 EGP</td>
+                  <td><span class="status-badge active">كافي</span></td>
+                </tr>
+                <tr>
+                  <td>P-003</td>
+                  <td>طابعات HP Laser</td>
+                  <td>أجهزة مكتبية</td>
+                  <td style="font-weight:600;">18</td>
+                  <td>4,500 EGP</td>
+                  <td style="font-weight:600;">81,000 EGP</td>
+                  <td><span class="status-badge pending">منخفض</span></td>
+                </tr>
+                <tr>
+                  <td>P-004</td>
+                  <td>ماوسات Logitech</td>
+                  <td>إكسسوارات</td>
+                  <td style="font-weight:600;">500</td>
+                  <td>350 EGP</td>
+                  <td style="font-weight:600;">175,000 EGP</td>
+                  <td><span class="status-badge active">كافي</span></td>
+                </tr>
+                <tr>
+                  <td>P-005</td>
+                  <td>كرات SWISS MEMORY</td>
+                  <td>مستلزمات مكتبية</td>
+                  <td style="font-weight:600;">320</td>
+                  <td>120 EGP</td>
+                  <td style="font-weight:600;">38,400 EGP</td>
+                  <td><span class="status-badge active">كافي</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 2: EMPLOYEES ===== -->
+      <div class="page" id="page-employees">
+        <div class="page-header">
+          <h2>👥 إدارة الموظفين</h2>
+          <p>قائمة جميع الموظفين مع إدارة كاملة</p>
+        </div>
+        <div class="table-container" style="max-height:calc(100vh - 200px);overflow-y:auto;">
+          <div class="table-header">
+            <h3>جميع الموظفين (147)</h3>
+            <div class="actions">
+              <button class="btn">➕ إضافة موظف</button>
+              <button class="btn">📥 استيراد</button>
+              <button class="btn primary">📊 تقرير</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>#</th><th>الموظف</th><th>القسم</th><th>الوظيفة</th><th>التاريخ</th><th>الحالة</th><th>الإجراءات</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;">أ</div>
+                    <div>
+                      <div style="font-weight:600;">أحمد محمد</div>
+                      <div style="font-size:11px;color:var(--text-muted);">أحمد.م@شركة.كوم</div>
+                    </div>
+                  </div>
+                </td>
+                <td>تطوير البرمجيات</td>
+                <td>Senior Backend Developer</td>
+                <td>15/03/2023</td>
+                <td><span class="status-badge active">نشط</span></td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">✏️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                </td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;">س</div>
+                    <div>
+                      <div style="font-weight:600;">سارة علي</div>
+                      <div style="font-size:11px;color:var(--text-muted);">sara.علي@شركة.كوم</div>
+                    </div>
+                  </div>
+                </td>
+                <td>التصميم</td>
+                <td>Senior UI/UX Designer</td>
+                <td>22/06/2022</td>
+                <td><span class="status-badge active">نشطة</span></td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">✏️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                </td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:flex;align-items:center;justify:center;font-size:12px;color:#fff;">م</div>
+                    <div>
+                      <div style="font-weight:600;">محمد صلاح</div>
+                      <div style="font-size:11px;color:var(--text-muted);">mohamed.صلاح@شركة.كوم</div>
+                    </div>
+                  </div>
+                </td>
+                <td>المبيعات</td>
+                <td>Sales Manager</td>
+                <td>10/01/2021</td>
+                <td><span class="status-badge active">نشط</span></td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">✏️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                </td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#10b981,#34d399);display:flex;align-items:center;justify:center;font-size:12px;color:#fff;">خ</div>
+                    <div>
+                      <div style="font-weight:600;">خالد عبد الله</div>
+                      <div style="font-size:11px;color:var(--text-muted);">khaled.عبدالله@شركة.كوم</div>
+                    </div>
+                  </div>
+                </td>
+                <td>الدعم الفني</td>
+                <td>IT Support Lead</td>
+                <td>05/09/2022</td>
+                <td><span class="status-badge active">نشط</span></td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">✏️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                </td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#f87171);display:flex;align-items:center;justify:center;font-size:12px;color:#fff;">之外</div>
+                    <div>
+                      <div style="font-weight:600;">之外--</div>
+                      <div style="font-size:11px;color:var(--text-muted);">之外.之外@شركة.كوم</div>
+                    </div>
+                  </div>
+                </td>
+                <td>التسويق</td>
+                <td>Marketing Specialist</td>
+                <td>18/04/2024</td>
+                <td><span class="status-badge pending">على إجازة</span></td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">✏️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 3: ATTENDANCE ===== -->
+      <div class="page" id="page-attendance">
+        <div class="page-header">
+          <h2>⏰ نظام الحضور والانصراف</h2>
+          <p>4-Layer verification: Biometric + GPS + Camera + Face Recognition</p>
+        </div>
+        <div class="attendance-clock">
+          <div class="clock-display">
+            <div class="clock-time" id="clock-time-att">14:32:17</div>
+            <div class="clock-date" id="clock-date-att">الخميس, 21 نوفمبر 2026 - القاهرة, مصر</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <div class="clock-stat">
+              <div class="value" style="font-size:36px;color:var(--success);">138</div>
+              <div class="label" style="font-size:11px;">حاضرون الآن</div>
+            </div>
+            <div class="clock-stat">
+              <div class="value" style="font-size:24px;color:var(--text-muted);font-weight:400;">5</div>
+              <div class="label" style="font-size:11px;">غائبون</div>
+            </div>
+            <div class="clock-stat">
+              <div class="value" style="font-size:24px;color:var(--warning);font-weight:400;">4</div>
+              <div class="label" style="font-size:11px;">متأخرين</div>
+            </div>
+            <div class="clock-stat">
+              <div class="value" style="font-size:24px;color:var(--accent-light);font-weight:400;">0</div>
+              <div class="label" style="font-size:11px;">في انتظار التأكد</div>
+            </div>
+          </div>
+        </div>
+        <div class="table-container" style="margin-top:15px;max-height:calc(100vh - 300px);overflow-y:auto;">
+          <div class="table-header">
+            <h3>سجلات الحضور - اليوم</h3>
+            <div class="actions">
+              <button class="btn">📅 اختيار تاريخ</button>
+              <button class="btn primary">➕ تسجيل دخول</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>الموظف</th><th>القسم</th><th>تسجيل الدخول</th><th>تسجيل الخروج</th><th>ساعات</th><th>الحالة</th><th>التبرع</th><th>التوقيع</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(0,180,216,0.15);color:var(--accent-light);display:flex;align-items:center;justify:center;font-size:11px;font-weight:600;">أ</div>
+                    <span>أحمد محمد</span>
+                  </div>
+                </td>
+                <td>تطوير البرمجيات</td>
+                <td style="color:var(--success);font-weight:600;">08:42 AM</td>
+                <td style="color:var(--text-muted);">--:-- --</td>
+                <td style="font-weight:600;">08h 30m</td>
+                <td><span class="status-badge active">حاضر</span></td>
+                <td style="color:var(--text-muted);">Finger</td>
+                <td><span style="color:var(--success);">✓ Biometric</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(139,92,246,0.15);color:#a78bfa;display:flex;align-items:center;justify:center;font-size:11px;font-weight:600;">س</div>
+                    <span>سارة علي</span>
+                  </div>
+                </td>
+                <td>التصميم</td>
+                <td style="color:var(--success);font-weight:600;">09:05 AM</td>
+                <td style="color:var(--text-muted);">--:-- --</td>
+                <td style="font-weight:600;">07h 57m</td>
+                <td><span class="status-badge active">حاضرة</span></td>
+                <td style="color:var(--text-muted);">Face</td>
+                <td><span style="color:var(--success);">✓ Face Match 98%</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,0.15);color:var(--warning);display:flex;align-items:center;justify:center;font-size:11px;font-weight:600;">م</div>
+                    <span>محمد صلاح</span>
+                  </div>
+                </td>
+                <td>المبيعات</td>
+                <td style="color:var(--warning);font-weight:600;">09:35 AM</td>
+                <td style="color:var(--text-muted);">--:-- --</td>
+                <td style="font-weight:600;">07h 27m</td>
+                <td><span class="status-badge pending">متأخر (35 دقيقة)</span></td>
+                <td style="color:var(--text-muted);">GPS</td>
+                <td><span style="color:var(--success);">✓ GPS Verified</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(16,185,129,0.15);color:var(--success);display:flex;align-items:center;justify:center;font-size:11px;font-weight:600;">خ</div>
+                    <span>خالد عبد الله</span>
+                  </div>
+                </td>
+                <td>الدعم الفني</td>
+                <td style="color:var(--success);font-weight:600;">08:30 AM</td>
+                <td style="color:var(--text-muted);">--:-- --</td>
+                <td style="font-weight:600;">08h 32m</td>
+                <td><span class="status-badge active">حاضر</span></td>
+                <td style="color:var(--text-muted);">Finger</td>
+                <td><span style="color:var(--success);">✓ Biometric</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,0.15);color:var(--danger);display:flex;align-items:center;justify:center;font-size:11px;font-weight:600;">之外</div>
+                    <span>之外--</span>
+                  </div>
+                </td>
+                <td>التسويق</td>
+                <td style="color:var(--danger);">---:---</td>
+                <td style="color:var(--text-muted);">---:---</td>
+                <td style="color:var(--text-muted);">---</td>
+                <td><span class="status-badge rejected">غائب (لم يسجل دخول)</span></td>
+                <td style="color:var(--text-muted);">---</td>
+                <td><span style="color:var(--danger);">✗ No verification</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 4: PAYROLL ===== -->
+      <div class="page" id="page-payroll">
+        <div class="page-header">
+          <h2>💰 نظام الرواتب والأجور</h2>
+          <p>حساب تلقائي - مصر: التأمين الاجتماعي 11% موظف + 18.75% رب цех، ضريبة الدخل</p>
+        </div>
+        <div class="grid-2" style="margin-bottom:15px;">
+          <div class="payroll-card">
+            <h4>💵 الراتب الشهري - نوفمبر 2026</h4>
+            <div class="payroll-row">
+              <span class="label">الراتب الأساسي</span>
+              <span class="value">15,000 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">سم allowance (25%)</span>
+              <span class="value">3,750 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">物 allowance (10%)</span>
+              <span class="value">1,500 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">ط allowance (5%)</span>
+              <span class="value">750 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label"> allowances أخرى</span>
+              <span class="value">500 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label"> overtime (10h × 30 EGP)</span>
+              <span class="value" style="color:var(--success);">300 EGP</span>
+            </div>
+            <div class="payroll-row" style="border-top:2px solid var(--accent);margin-top:8px;padding-top:10px;">
+              <span class="label" style="font-weight:600;">إجمالي الأرباح</span>
+              <span class="value" style="font-weight:700;font-size:16px;">21,800 EGP</span>
+            </div>
+            <div class="payroll-row" style="margin-top:10px;">
+              <span class="label">غياب (2 أيام × يومي)</span>
+              <span class="value" style="color:var(--danger);">-1,000 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">تأخير (3 مرات × 5 EGP)</span>
+              <span class="value" style="color:var(--danger);">-15 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">التأمين الاجتماعي (11%)</span>
+              <span class="value" style="color:var(--danger);">-1,782 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label"> التأمين الصحي (1%)</span>
+              <span class="value" style="color:var(--danger);">-218 EGP</span>
+            </div>
+            <div class="payroll-row">
+              <span class="label">دخول (درجة 2)</span>
+              <span class="value" style="color:var(--danger);">-2,140 EGP</span>
+            </div>
+            <div class="payroll-row total">
+              <span class="label">صافي الراتب</span>
+              <span class="value">28,445 EGP</span>
+            </div>
+          </div>
+          <div class="payroll-card">
+            <h4>📊 إحصائيات الرواتب</h4>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">إجمالي الرواتب هذا الشهر</span>
+                <span style="font-weight:700;color:var(--accent-light);">128,500 EGP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">متوسط الراتب</span>
+                <span style="font-weight:700;">1,284 EGP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);"> أعلى راتب</span>
+                <span style="font-weight:700;color:var(--success);">22,500 EGP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">أدنى راتب</span>
+                <span style="font-weight:700;color:var(--danger);">9,200 EGP</span>
+              </div>
+              <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);">
+                  <span>المدفوعة</span>
+                  <span style="font-weight:600;color:var(--success);">135 موظف</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);margin-top:5px;">
+                  <span>في الانتظار</span>
+                  <span style="font-weight:600;color:var(--warning);">12 موظف</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);margin-top:5px;">
+                  <span>إجمالي التكلفة</span>
+                  <span style="font-weight:700;color:var(--accent-light);">128,500 EGP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="table-container" style="max-height:calc(100vh - 300px);overflow-y:auto;">
+          <div class="table-header">
+            <h3>سجلات الرواتب - نوفمبر 2026</h3>
+            <div class="actions">
+              <button class="btn">🔍 تصفية</button>
+              <button class="btn">📊 تقرير</button>
+              <button class="btn primary">➕ حساب راتب</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>الموظف</th><th>القسم</th><th>الراتب الأساسي</th><th>الأرباح</th><th>الخصومات</th><th>صافي</th><th>الحالة</th><th>إجراء</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>أحمد محمد</td>
+                <td>تطوير البرمجيات</td>
+                <td>18,000</td>
+                <td style="color:var(--success);">21,800</td>
+                <td style="color:var(--danger);">4,145</td>
+                <td style="font-weight:700;color:var(--accent-light);">28,445</td>
+                <td><span class="status-badge approved">مدفوع</span></td>
+                <td><button class="btn" style="padding:4px 8px;">📄 كشف</button></td>
+              </tr>
+              <tr>
+                <td>سارة علي</td>
+                <td>التصميم</td>
+                <td>15,000</td>
+                <td style="color:var(--success);">18,750</td>
+                <td style="color:var(--danger);">3,450</td>
+                <td style="font-weight:700;color:var(--accent-light);">20,300</td>
+                <td><span class="status-badge approved">مدفوع</span></td>
+                <td><button class="btn" style="padding:4px 8px;">📄 كشف</button></td>
+              </tr>
+              <tr>
+                <td>خالد عبد الله</td>
+                <td>الدعم الفني</td>
+                <td>12,000</td>
+                <td style="color:var(--success);">14,800</td>
+                <td style="color:var(--danger);">2,760</td>
+                <td style="font-weight:700;color:var(--accent-light);">16,540</td>
+                <td><span class="status-badge approved">مدفوع</span></td>
+                <td><button class="btn" style="padding:4px 8px;">📄 كشف</button></td>
+              </tr>
+              <tr>
+                <td>محمد صلاح</td>
+                <td>المبيعات</td>
+                <td>10,000</td>
+                <td style="color:var(--success);">12,400</td>
+                <td style="color:var(--danger);">2,300</td>
+                <td style="font-weight:700;color:var(--accent-light);">14,250</td>
+                <td><span class="status-badge pending">في الانتظار</span></td>
+                <td><button class="btn" style="padding:4px 8px;">✅ approve</button></td>
+              </tr>
+              <tr>
+                <td>之外--</td>
+                <td>التسويق</td>
+                <td>8,000</td>
+                <td style="color:var(--success);">10,200</td>
+                <td style="color:var(--danger);">1,800</td>
+                <td style="font-weight:700;color:var(--accent-light);">11,550</td>
+                <td><span class="status-badge approved">مدفوع</span></td>
+                <td><button class="btn" style="padding:4px 8px;">📄 كشف</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 5: RECRUITMENT ===== -->
+      <div class="page" id="page-recruitment">
+        <div class="page-header">
+          <h2>🎯 نظام التوظيف بالذكاء الاصطناعي</h2>
+          <p>فحص 500+ CV في 5 دقائق | مقابلات AI -Arabic | توصيات توظيف</p>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat-card green">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value">47</div>
+            <div class="stat-label">طلبات التوظيف</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">👤</div>
+            <div class="stat-value">238</div>
+            <div class="stat-label">مرشح مبتش</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-value">38</div>
+            <div class="stat-label">قيد الفحص بالذكاء الاصطناعي</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon">🤖</div>
+            <div class="stat-value">12</div>
+            <div class="stat-label">مقابالت آلية</div>
+          </div>
+        </div>
+        <div class="pipeline" style="margin-bottom:20px;">
+          <div class="pipeline-step new">
+            <div class="count" style="color:var(--text-muted);font-size:22px;">23</div>
+            <div class="label">🆕 جديدة</div>
+          </div>
+          <div class="pipeline-step screening">
+            <div class="count" style="color:var(--accent-light);font-size:22px;">38</div>
+            <div class="label">🔍 فحص بالذكاء الاصطناعي</div>
+          </div>
+          <div class="pipeline-step interview">
+            <div class="count" style="color:var(--warning);font-size:22px;">12</div>
+            <div class="label">🤖 مقابلات آلية</div>
+          </div>
+          <div class="pipeline-step hired">
+            <div class="count" style="color:var(--success);font-size:22px;">7</div>
+            <div class="label">✅ تم التوظيف</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="table-container" style="height:350px;overflow-y:auto;">
+            <div class="table-header">
+              <h3>🏆 المرشحين - أعلى الدرجات</h3>
+            </div>
+            <table>
+              <thead>
+                <tr><th>#</th><th>الاسم</th><th>الدرجة</th><th>مرحلة</th><th>تقييم</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:30px;height:30px;border-radius:50%;background:rgba(16,185,129,0.15);color:var(--success);display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;">ن</div>
+                      <span>نور هاني</span>
+                    </div>
+                  </td>
+                  <td>مصمم واجهات</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div class="score-ring high" style="width:36px;height:36px;"><span class="score-value" style="font-size:10px;">94%</span></div>
+                      <span style="font-weight:700;color:var(--success);font-size:14px;">94%</span>
+                    </div>
+                  </td>
+                  <td><span class="status-badge hired">تم التوظيف</span></td>
+                  <td style="font-size:11px;color:var(--text-muted);">منتجات جاهزة ✓</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:30px;height:30px;border-radius:50%;background:rgba(0,180,216,0.15);color:var(--accent-light);display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;">إ</div>
+                      <span>إبراهيم فاروق</span>
+                    </div>
+                  </td>
+                  <td>مطورバックエンド</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div class="score-ring high" style="width:36px;height:36px;"><span class="score-value" style="font-size:10px;">87%</span></div>
+                      <span style="font-weight:700;color:var(--success);font-size:14px;">87%</span>
+                    </div>
+                  </td>
+                  <td><span class="status-badge screening">فحص AI</span></td>
+                  <td style="font-size:11px;color:var(--text-muted);">CV screening complete ✓</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:30px;height:30px;border-radius:50%;background:rgba(245,158,11,0.15);color:var(--warning);display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;">م</div>
+                      <span>مريم حسن</span>
+                    </div>
+                  </td>
+                  <td>محللة بيانات</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div class="score-ring high" style="width:36px;height:36px;"><span class="score-value" style="font-size:10px;">78%</span></div>
+                      <span style="font-weight:700;color:var(--success);font-size:14px;">78%</span>
+                    </div>
+                  </td>
+                  <td><span class="status-badge interview">مقابلة آلية</span></td>
+                  <td style="font-size:11px;color:var(--text-muted);">Interview scheduled</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:30px;height:30px;border-radius:50%;background:rgba(239,68,68,0.15);color:var(--danger);display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;">ع</div>
+                      <span>علي عبد الله</span>
+                    </div>
+                  </td>
+                  <td>مهندس DevOps</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div class="score-ring low" style="width:36px;height:36px;"><span class="score-value" style="font-size:10px;">68%</span></div>
+                      <span style="font-weight:700;color:var(--danger);font-size:14px;">68%</span>
+                    </div>
+                  </td>
+                  <td><span class="status-badge rejected">مرفوض</span></td>
+                  <td style="font-size:11px;color:var(--danger);">Score too low</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:30px;height:30px;border-radius:50%;background:rgba(139,92,246,0.15);color:#a78bfa;display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;">ف</div>
+                      <span>فاطمة حمدi</span>
+                    </div>
+                  </td>
+                  <td>مطورフロントエンド</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div class="score-ring high" style="width:36px;height:36px;"><span class="score-value" style="font-size:10px;">82%</span></div>
+                      <span style="font-weight:700;color:var(--success);font-size:14px;">82%</span>
+                    </div>
+                  </td>
+                  <td><span class="status-badge screening">فحص AI</span></td>
+                  <td style="font-size:11px;color:var(--text-muted);">LLM extraction complete</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="stat-card blue" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">كيف يعمل الفحص بالذكاء الاصطناعي</h4>
+            <div style="display:flex;flex-direction:column;gap:12px;font-size:12px;color:var(--text-secondary);">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;flex-shrink:0;">1</div>
+                <div><strong>رفع CVs (PDF/DOCX/TXT)</strong><br><span style="color:var(--text-muted);"> حتى 500 ملف في مرة واحدة</span></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;flex-shrink:0;">2</div>
+                <div><strong>استخراج النص المحلي</strong><br><span style="color:var(--text-muted);"> لا ت 참가 أي بيانات للخارج</span></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;flex-shrink:0;">3</div>
+                <div><strong>LLM Extraction (GPT-4o-mini)</strong><br><span style="color:var(--text-muted);"> استخراج مهارات، خبرة، تعليم</span></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;flex-shrink:0;">4</div>
+                <div><strong>Keyword Scoring + AI Ranking</strong><br><span style="color:var(--text-muted);"> درجة لكل معيار + ترتيب نهائي</span></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify:center;font-size:11px;font-weight:700;flex-shrink:0;">5</div>
+                <div><strong>تقرير reviewer + Human Gate</strong><br><span style="color:var(--text-muted);"> مراجعة بشرية مطلوبة قبل التوظيف</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 6: CANDIDATES ===== -->
+      <div class="page" id="page-candidates">
+        <div class="page-header">
+          <h2>👤 إدارة المرشحين</h2>
+          <p>قاعدة بيانات المرشحين مع فحص AI وتتبع المراحل</p>
+        </div>
+        <div class="table-container" style="max-height:calc(100vh - 200px);overflow-y:auto;">
+          <div class="table-header">
+            <h3>جميع المرشحين (238)</h3>
+            <div class="actions">
+              <button class="btn">🔍 بحث</button>
+              <button class="btn">📊 تقرير</button>
+              <button class="btn primary">➕ إضافة مرشح</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>#</th><th>الاسم</th><th>البريد</th><th>الوظيفة</th><th>درجة CV</th><th>مرحلة</th><th>แหล่งที่มา</th><th>التاريخ</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>نور هاني</td>
+                <td style="color:var(--accent-light);">nour.hany@email.com</td>
+                <td>مصمم واجهات</td>
+                <td><div class="score-ring high" style="width:30px;height:30px;"><span class="score-value" style="font-size:9px;">94%</span></div></td>
+                <td><span class="status-badge hired">تم التوظيف</span></td>
+                <td>LinkedIn</td>
+                <td>15/11/2026</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>إبراهيم فاروق</td>
+                <td style="color:var(--accent-light);">ibrahim.f@email.com</td>
+                <td>مطورバックエンド</td>
+                <td><div class="score-ring high" style="width:30px;height:30px;"><span class="score-value" style="font-size:9px;">87%</span></div></td>
+                <td><span class="status-badge screening">فحص AI</span></td>
+                <td>Wuzzuf</td>
+                <td>14/11/2026</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>مريم حسن</td>
+                <td style="color:var(--accent-light);">meryem.hassan@email.com</td>
+                <td>محللة بيانات</td>
+                <td><div class="score-ring high" style="width:30px;height:30px;"><span class="score-value" style="font-size:9px;">78%</span></div></td>
+                <td><span class="status-badge interview">مقابلة آلية</span></td>
+                <td>إحالة</td>
+                <td>13/11/2026</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>علي عبد الله</td>
+                <td style="color:var(--accent-light);">ali.abdel@email.com</td>
+                <td>مهندس DevOps</td>
+                <td><div class="score-ring low" style="width:30px;height:30px;"><span class="score-value" style="font-size:9px;">68%</span></div></td>
+                <td><span class="status-badge rejected">مرفوض</span></td>
+                <td>Bayt</td>
+                <td>12/11/2026</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>فاطمة حمدi</td>
+                <td style="color:var(--accent-light);">fatma.hamdi@email.com</td>
+                <td>مطورフロントエンド</td>
+                <td><div class="score-ring high" style="width:30px;height:30px;"><span class="score-value" style="font-size:9px;">82%</span></div></td>
+                <td><span class="status-badge screening">فحص AI</span></td>
+                <td>Indeed</td>
+                <td>11/11/2026</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 7: INVENTORY ===== -->
+      <div class="page" id="page-inventory">
+        <div class="page-header">
+          <h2>📦 إدارة المخزن</h2>
+          <p>إدارة المنتجات، الحركات، طلبات الشراء، والموردين</p>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);">
+          <div class="stat-card purple">
+            <div class="stat-icon">📦</div>
+            <div class="stat-value">1,247</div>
+            <div class="stat-label">المنتجات</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value">8,540</div>
+            <div class="stat-label">الكمية الإجمالية</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value">23</div>
+            <div class="stat-label">منخفضة</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">🛒</div>
+            <div class="stat-value">18</div>
+            <div class="stat-label">أوامر الشراء نشطة</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">🚫</div>
+            <div class="stat-value">5</div>
+            <div class="stat-label">خارج المخزون</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="table-container" style="height:350px;overflow-y:auto;">
+            <div class="table-header">
+              <h3>المنتجات - رصيد الحالية</h3>
+              <button class="btn primary">➕ منتج جديد</button>
+            </div>
+            <table>
+              <thead>
+                <tr><th>SKU</th><th>المنتج</th><th>الفئة</th><th>الكمية</th><th>سعر الشراء</th><th>قيمة المخزن</th><th>الحالة</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>P-001</td>
+                  <td>شاشات LED 24"</td>
+                  <td>إلكترونيات</td>
+                  <td style="font-weight:600;">120</td>
+                  <td>3,200</td>
+                  <td style="font-weight:600;color:var(--accent-light);">384,000</td>
+                  <td><span class="status-badge active">كافي</span></td>
+                </tr>
+                <tr>
+                  <td>P-002</td>
+                  <td>لابتوبات Dell XPS</td>
+                  <td>إلكترونيات</td>
+                  <td style="font-weight:600;color:var(--success);">45</td>
+                  <td>18,000</td>
+                  <td style="font-weight:600;color:var(--accent-light);">810,000</td>
+                  <td><span class="status-badge active">كافي</span></td>
+                </tr>
+                <tr>
+                  <td>P-003</td>
+                  <td>طابعات HP Laser</td>
+                  <td>أجهزة مكتبية</td>
+                  <td style="font-weight:600;color:var(--warning);">18</td>
+                  <td>4,500</td>
+                  <td style="font-weight:600;color:var(--accent-light);">81,000</td>
+                  <td><span class="status-badge pending">منخفض</span></td>
+                </tr>
+                <tr>
+                  <td>P-004</td>
+                  <td>ماوسات Logitech</td>
+                  <td>إكسسوارات</td>
+                  <td style="font-weight:600;">500</td>
+                  <td>350</td>
+                  <td style="font-weight:600;color:var(--accent-light);">175,000</td>
+                  <td><span class="status-badge active">كافي</span></td>
+                </tr>
+                <tr>
+                  <td>P-005</td>
+                  <td>كرات SWISS MEMORY</td>
+                  <td>مستلزمات مكتبية</td>
+                  <td style="font-weight:600;color:var(--danger);">0</td>
+                  <td>120</td>
+                  <td style="font-weight:600;color:var(--accent-light);">0</td>
+                  <td><span class="status-badge rejected">خارج المخزون</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="stat-card blue" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">مخزون منخفض - تحتاج مراجعة</h4>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                <span style="color:var(--text-secondary);">🔴 طابعات HP Laser</span>
+                <span style="font-weight:600;color:var(--danger);">18 (limit: 25)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                <span style="color:var(--text-secondary);">🟡 كراسات A4</span>
+                <span style="font-weight:600;color:var(--warning);">120 (limit: 200)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                <span style="color:var(--text-secondary);">🟡 Sim Cards (data)</span>
+                <span style="font-weight:600;color:var(--warning);">8 (limit: 15)</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;">
+                <span style="color:var(--text-secondary);">🟢 شاشات LED 24"</span>
+                <span style="font-weight:600;color:var(--success);">120 (limit: 20)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 8: PURCHASE ORDERS ===== -->
+      <div class="page" id="page-purchase-orders">
+        <div class="page-header">
+          <h2>🛒 أوامر الشراء</h2>
+          <p>إدارة المشتريات - 3-way match: PO + receipt + invoice</p>
+        </div>
+        <div class="table-container" style="max-height:calc(100vh - 200px);overflow-y:auto;">
+          <div class="table-header">
+            <h3>أوامر الشراء - 18 نشطة</h3>
+            <div class="actions">
+              <button class="btn">🔍 تصفية</button>
+              <button class="btn primary">➕ أمر شراء جديد</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>PONumber</th><th>المورد</th><th>ال status</th><th>تاريخ الطلب</th><th>تاريخ التسليم</th><th>الإجمالي</th><th>الإجراءات</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>PO-20261121-001</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,180,216,0.15);color:var(--accent-light);display:flex;align-items:center;justify:center;font-size:10px;">م</div>
+                    <span>مورد إلكترونيات مصر</span>
+                  </div>
+                </td>
+                <td><span class="status-badge approved">تمت الموافقة</span></td>
+                <td>20/11/2026</td>
+                <td>25/11/2026</td>
+                <td style="font-weight:600;">45,000 EGP</td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                </td>
+              </tr>
+              <tr>
+                <td>PO-20261120-002</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(139,92,246,0.15);color:#a78bfa;display:flex;align-items:center;justify:center;font-size:10px;">س</div>
+                    <span>شركة المملكة للتوريد</span>
+                  </div>
+                </td>
+                <td><span class="status-badge pending">مرسلة</span></td>
+                <td>20/11/2026</td>
+                <td>27/11/2026</td>
+                <td style="font-weight:600;">12,500 EGP</td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                </td>
+              </tr>
+              <tr>
+                <td>PO-20261119-003</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(245,158,11,0.15);color:var(--warning);display:flex;align-items:center;justify:center;font-size:10px;">ع</div>
+                    <span>كل العربيات</td>
+                  </div>
+                </td>
+                <td><span class="status-badge active">معتمدة</span></td>
+                <td>19/11/2026</td>
+                <td>22/11/2026</td>
+                <td style="font-weight:600;">8,200 EGP</td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">📄</button>
+                  <button class="btn" style="padding:4px 8px;color:var(--success);">✓ استلام</button>
+                </td>
+              </tr>
+              <tr>
+                <td>PO-20261118-004</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(16,185,129,0.15);color:var(--success);display:flex;align-items:center;justify:center;font-size:10px;">ل</div>
+                    <span>ل条件下 د 문화의</span>
+                  </div>
+                </td>
+                <td><span class="status-badge rejected">ملぐれ</span></td>
+                <td>18/11/2026</td>
+                <td>---</td>
+                <td style="color:var(--danger);">0 EGP</td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                </td>
+              </tr>
+              <tr>
+                <td>PO-20261117-005</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,180,216,0.15);color:var(--accent-light);display:flex;align-items:center;justify:center;font-size:10px;">م</div>
+                    <span>مورد إلكترونيات مصر</span>
+                  </div>
+                </td>
+                <td><span class="status-badge pending">في الانتظار</span></td>
+                <td>17/11/2026</td>
+                <td>24/11/2026</td>
+                <td style="font-weight:600;">28,000 EGP</td>
+                <td>
+                  <button class="btn" style="padding:4px 8px;">👁️</button>
+                  <button class="btn" style="padding:4px 8px;">✅ approve</button>
+                  <button class="btn" style="padding:4px 8px;">❌ reject</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 9: ANALYTICS ===== -->
+      <div class="page" id="page-analytics">
+        <div class="page-header">
+          <h2>📈 لوحة التحليلات والذكاء الاصطناعي</h2>
+          <p>تحليلات OTP، التنبؤات بالذكاء الاصطناعي، التقارير التلقائية</p>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat-card blue">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">147</div>
+            <div class="stat-label">إجمالي الموظفين</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">📈</div>
+            <div class="stat-value">94%</div>
+            <div class="stat-label">معدل الحضور (ت以上の)</div>
+            <div class="stat-change up">↑ من 91% الشهر الماضي</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value">128.5K</div>
+            <div class="stat-label">تكلفة الرواتب الشهرية</div>
+            <div class="stat-change" style="color:var(--text-muted);">متوسط 1,284/موظف</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-value">78%</div>
+            <div class="stat-label">معدل قبول المرشحين</div>
+            <div class="stat-change up">↑ من 65% الشهر الماضي</div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-bottom:15px;">
+          <div class="chart-placeholder">
+            <h4 style="color:var(--text-primary);font-size:13px;margin-bottom:15px;">اتجاهات الحضور - آخر 30 يوم</h4>
+            <div class="chart-bars">
+              <div class="chart-bar" style="height:50px;"></div>
+              <div class="chart-bar" style="height:65px;"></div>
+              <div class="chart-bar" style="height:78px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+              <div class="chart-bar" style="height:82px;"></div>
+              <div class="chart-bar" style="height:70px;"></div>
+              <div class="chart-bar" style="height:90px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+              <div class="chart-bar" style="height:94px;"></div>
+              <div class="chart-bar" style="height:88px;"></div>
+              <div class="chart-bar" style="height:75px;"></div>
+              <div class="chart-bar" style="height:85px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+              <div class="chart-bar" style="height:92px;"></div>
+              <div class="chart-bar" style="height:60px;"></div>
+              <div class="chart-bar" style="height:70px;"></div>
+              <div class="chart-bar" style="height:80px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+              <div class="chart-bar" style="height:88px;"></div>
+              <div class="chart-bar" style="height:95px;"></div>
+              <div class="chart-bar" style="height:90px;"></div>
+              <div class="chart-bar" style="height:78px;"></div>
+              <div class="chart-bar" style="height:82px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+              <div class="chart-bar" style="height:90px;"></div>
+              <div class="chart-bar" style="height:94px;"></div>
+              <div class="chart-bar" style="height:85px;"></div>
+              <div class="chart-bar" style="height:75px;"></div>
+              <div class="chart-bar" style="height:80px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+              <div class="chart-bar" style="height:92px;"></div>
+              <div class="chart-bar" style="height:96px;"></div>
+              <div class="chart-bar" style="height:88px;"></div>
+              <div class="chart-bar" style="height:70px;"></div>
+              <div class="chart-bar" style="height:78px;"></div>
+              <div class="chart-bar" style="height:85px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+              <div class="chart-bar" style="height:95px;"></div>
+              <div class="chart-bar" style="height:90px;"></div>
+              <div class="chart-bar" style="height:82px;"></div>
+              <div class="chart-bar" style="height:78px;"></div>
+              <div class="chart-bar" style="height:88px;background:linear-gradient(to top,var(--accent-dark),var(--accent-light));"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:8px;width:100%;">
+              <span>يوم 1</span><span>يوم 5</span><span>يوم 10</span><span>يوم 15</span><span>يوم 20</span><span>يوم 25</span><span>يوم 30</span>
+            </div>
+          </div>
+          <div class="chart-placeholder">
+            <h4 style="color:var(--text-primary);font-size:13px;margin-bottom:15px;">تكلفة الرواتب - trenders</h4>
+            <div class="chart-bars" style="height:80px;">
+              <div class="chart-bar" style="height:40px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+              <div class="chart-bar" style="height:45px;"></div>
+              <div class="chart-bar" style="height:52px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+              <div class="chart-bar" style="height:48px;"></div>
+              <div class="chart-bar" style="height:55px;"></div>
+              <div class="chart-bar" style="height:58px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+              <div class="chart-bar" style="height:62px;"></div>
+              <div class="chart-bar" style="height:50px;"></div>
+              <div class="chart-bar" style="height:56px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+              <div class="chart-bar" style="height:60px;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:8px;width:100%;">
+              <span>10/2026</span><span>11/2026</span><span>12/2026</span><span>1/2027</span><span>2/2027</span><span>3/2027</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="stat-card purple" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">🔮 تنبؤات الذكاء الاصطناعي - معدل دوران الموظفين</h4>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:60px;height:60px;border-radius:50%;background:conic-gradient(from 0deg,var(--danger) 0%,var(--danger) 35%,transparent 35%,transparent 100%);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--danger);">35%</div>
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:5px;">مخاطر دوران الموظفين</div>
+                <div style="font-size:11px;color:var(--text-muted);line-height:1.5;">
+                  خلال 90 يومًا القادمة<br>
+                  • 12 موظف معرض للخطر<br>
+                  • 4 موظف به خطر مرتفع<br>
+                  • العامل الرئيسي: التأخر المتكرر
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card blue" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">🔮 تنبؤات الذكاء الاصطناعي - تكلفة الرواتب القادمة</h4>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">نوفمبر 2026 (الفعلي)</span>
+                <span style="font-weight:700;color:var(--accent-light);">128,500 EGP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">ديسمبر 2026 (التنبؤ)</span>
+                <span style="font-weight:700;color:var(--warning);">131,200 EGP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">يناير 2027 (التنبؤ)</span>
+                <span style="font-weight:700;color:var(--warning);">133,800 EGP</span>
+              </div>
+              <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);"> الزيادة المتوقعة</span>
+                <span style="font-weight:600;color:var(--success);">+4.1%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 10: PREDICTIONS ===== -->
+      <div class="page" id="page-predictions">
+        <div class="page-header">
+          <h2>🔮 التنبؤات بالذكاء الاصطناعي</h2>
+          <p>AI-powered predictions for turnover, payroll, attendance, inventory</p>
+        </div>
+        <div class="grid-2">
+          <div class="stat-card red" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">⚠️ مخاطر دوران الموظفين - Top 5</h4>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.15);color:var(--danger);display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">78%</div>
+                  <div>
+                    <div style="font-weight:600;font-size:13px;">محمد صلاح</div>
+                    <div style="font-size:10px;color:var(--text-muted);">المبيعات - 4 years</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:20px;font-weight:800;color:var(--danger);">78%</div>
+                  <div style="font-size:10px;color:var(--text-muted);">خاطر مرتفع</div>
+                </div>
+              </div>
+              <div style="border-left:2px solid var(--border);"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.15);color:var(--danger);display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">65%</div>
+                  <div>
+                    <div style="font-weight:600;font-size:13px;">之外--</div>
+                    <div style="font-size:10px;color:var(--text-muted);">التسويق - 2 years</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:20px;font-weight:800;color:var(--danger);">65%</div>
+                  <div style="font-size:10px;color:var(--text-muted);">خاطر مرتفع</div>
+                </div>
+              </div>
+              <div style="border-left:2px solid var(--border);"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,0.15);color:var(--warning);display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">42%</div>
+                  <div>
+                    <div style="font-weight:600;font-size:13px;">خالد عبد الله</div>
+                    <div style="font-size:10px;color:var(--text-muted);">الدعم الفني - 3 years</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:20px;font-weight:800;color:var(--warning);">42%</div>
+                  <div style="font-size:10px;color:var(--text-muted);">خاطر متوسط</div>
+                </div>
+              </div>
+              <div style="border-left:2px solid var(--border);"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,0.15);color:var(--warning);display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">38%</div>
+                  <div>
+                    <div style="font-weight:600;font-size:13px;">سارة علي</div>
+                    <div style="font-size:10px;color:var(--text-muted);">التصميم - 4 years</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:20px;font-weight:800;color:var(--warning);">38%</div>
+                  <div style="font-size:10px;color:var(--text-muted);">خاطر متوسط</div>
+                </div>
+              </div>
+              <div style="border-left:2px solid var(--border);"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:rgba(16,185,129,0.15);color:var(--success);display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">22%</div>
+                  <div>
+                    <div style="font-weight:600;font-size:13px;">أحمد محمد</div>
+                    <div style="font-size:10px;color:var(--text-muted);">تطوير البرمجيات - 3 years</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:20px;font-weight:800;color:var(--success);">22%</div>
+                  <div style="font-size:10px;color:var(--text-muted);">خاطر منخفض</div>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:15px;padding-top:10px;font-size:11px;color:var(--text-muted);">
+              <strong>عوامل الخطر:</strong> التأخر المتكرر، absence patterns, market salary gap, tenure
+            </div>
+          </div>
+          <div class="stat-card blue" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">📊 تنبؤات الرواتب - الأشهر الثلاثة القادمة</h4>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="background:rgba(0,180,216,0.1);border:1px solid rgba(0,180,216,0.2);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:12px;color:var(--text-secondary);">نوفمبر 2026</div>
+                <div style="font-size:14px;font-weight:700;color:var(--accent-light);">128,500 EGP</div>
+                <div style="font-size:10px;color:var(--text-muted);">فعلي</div>
+              </div>
+              <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:12px;color:var(--text-secondary);">ديسمبر 2026</div>
+                <div style="font-size:14px;font-weight:700;color:var(--warning);">131,200 EGP</div>
+                <div style="font-size:10px;color:var(--text-muted);">التنبؤ +2.1%</div>
+              </div>
+              <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:12px;color:var(--text-secondary);">يناير 2027</div>
+                <div style="font-size:14px;font-weight:700;color:var(--warning);">133,800 EGP</div>
+                <div style="font-size:10px;color:var(--text-muted);">التنبؤ +4.1%</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:15px;padding-top:10px;font-size:11px;color:var(--text-muted);">
+              <strong>العوامل:</strong> new hires, salary adjustments, overtime trends
+            </div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:15px;">
+          <div class="stat-card orange" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">📅 تنبؤات الحضور - الغد</h4>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">الحاضرون المتوقعون</span>
+                <span style="font-weight:700;color:var(--success);">132 موظف</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">المتأخرون المتوقعون</span>
+                <span style="font-weight:700;color:var(--warning);">6 موظف</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">الغائبون المتوقعون</span>
+                <span style="font-weight:700;color:var(--danger);">9 موظف</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--text-secondary);">معدل الحضور المتوقع</span>
+                <span style="font-weight:700;color:var(--accent-light);">93.2%</span>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:15px;padding-top:10px;font-size:11px;color:var(--text-muted);">
+              <strong>العوامل:</strong> historical patterns, weather forecast, day of week
+            </div>
+          </div>
+          <div class="stat-card purple" style="padding:20px;">
+            <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:15px;">📦 تنبؤات المخزون - إعادة الطلب</h4>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);">
+                <span style="color:var(--text-secondary);">طابعات HP Laser</span>
+                <div style="display:flex;gap:5px;align-items:center;">
+                  <div style="width:60px;height:6px;background:rgba(245,158,11,0.2);border-radius:3px;overflow:hidden;">
+                    <div style="width:72%;height:100%;background:var(--warning);border-radius:3px;"></div>
+                  </div>
+                  <span style="font-size:10px;font-weight:600;color:var(--warning);">8</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);">
+                <span style="color:var(--text-secondary);">كراسات A4</span>
+                <div style="display:flex;gap:5px;align-items:center;">
+                  <div style="width:60px;height:6px;background:rgba(245,158,11,0.2);border-radius:3px;overflow:hidden;">
+                    <div style="width:40%;height:100%;background:var(--warning);border-radius:3px;"></div>
+                  </div>
+                  <span style="font-size:10px;font-weight:600;color:var(--warning);">120</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);">
+                <span style="color:var(--text-secondary);">Sim Cards</span>
+                <div style="display:flex;gap:5px;align-items:center;">
+                  <div style="width:60px;height:6px;background:rgba(239,68,68,0.2);border-radius:3px;overflow:hidden;">
+                    <div style="width:100%;height:100%;background:var(--danger);border-radius:3px;"></div>
+                  </div>
+                  <span style="font-size:10px;font-weight:600;color:var(--danger);">8</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;">
+                <span style="color:var(--text-secondary);">USB Flash Drives</span>
+                <div style="display:flex;gap:5px;align-items:center;">
+                  <div style="width:60px;height:6px;background:rgba(16,185,129,0.2);border-radius:3px;overflow:hidden;">
+                    <div style="width:10%;height:100%;background:var(--success);border-radius:3px;"></div>
+                  </div>
+                  <span style="font-size:10px;font-weight:600;color:var(--success);">320</span>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:15px;padding-top:10px;font-size:11px;color:var(--text-muted);">
+              <strong>توصيات إعادة الطلب:</strong> 3 منتجات تحتاج مراجعة
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 11: SETTINGS ===== -->
+      <div class="page" id="page-settings">
+        <div class="page-header">
+          <h2>⚙️ إعدادات النظام</h2>
+          <p>إدارة إعدادات الشركة، المستخدمين، والأدوار</p>
+        </div>
+        <div class="grid-2">
+          <div class="ep-card">
+            <h4><span class="ep-icon" style="background:rgba(0,180,216,0.15);color:var(--accent-light);">🏢</span> إعدادات الشركة</h4>
+            <ul>
+              <li><span style="font-weight:600;color:var(--text-primary);">اسم الشركة:</span> شركة تقنية المعلومات</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">القطاع:</span> التكنولوجيا والمعلومات</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">الدولة:</span> مصر</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">العملة:</span> EGP (مصري جنيه)</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">المنطقة الزمنية:</span> Africa/Cairo</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">المستوى:</span> Enterprise</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">الحد الأقصى:</span> 500 موظف</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">العدد الحالي:</span> 147 موظف</li>
+            </ul>
+          </div>
+          <div class="ep-card">
+            <h4><span class="ep-icon" style="background:rgba(16,185,129,0.15);color:var(--success);">🔐</span> إعدادات الأمان</h4>
+            <ul>
+              <li><span style="font-weight:600;color:var(--text-primary);">نظام المصادقة:</span> JWT + RBAC</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">بيئة التشغيل:</span> Production</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">وضع المراجعة:</span> Active</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">تسجيل الأحداث:</span> مفعل</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">ترميز البيانات:</span> AES-256</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">تاريخ المراجعة:</span> 21/11/2026</li>
+            </ul>
+          </div>
+          <div class="ep-card">
+            <h4><span class="ep-icon" style="background:rgba(245,158,11,0.15);color:var(--warning);">📧</span> إعدادات الاتصالات</h4>
+            <ul>
+              <li><span style="font-weight:600;color:var(--text-primary);">SMTP:</span> gmail.com (مفعل)</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">SMS Gateway:</span> Twilio (مفعل)</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">إشعارات الدفع:</span>銀行 (مفعل)</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">تكامل LinkedIn:</span> مفعل</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">تكامل Wuzzuf:</span> مفعل</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">تكامل Bayt:</span> مفعل</li>
+            </ul>
+          </div>
+          <div class="ep-card">
+            <h4><span class="ep-icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">🤖</span> إعدادات الذكاء الاصطناعي</h4>
+            <ul>
+              <li><span style="font-weight:600;color:var(--text-primary);">CV Screening Model:</span> GPT-4o-mini</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">AI Interview Model:</span> Gemini 1.5 Pro</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">Language:</span> Arabic (RTL) + English</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">Face Recognition:</span> OpenCV + face_recognition</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">NLP Arabic:</span> CAMeL Tools</li>
+              <li><span style="font-weight:600;color:var(--text-primary);">Keys:</span> مفعلة (آمنة)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PAGE 12: PROFILE ===== -->
+      <div class="page" id="page-profile">
+        <div class="page-header">
+          <h2>👤 الملف الشخصي</h2>
+          <p>بياناتك الشخصية وإعدادات الحساب</p>
+        </div>
+        <div class="ep-card" style="max-width:600px;margin:0 auto;">
+          <div style="text-align:center;padding:20px 0;border-bottom:1px solid var(--border);margin-bottom:20px;">
+            <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;margin:0 auto 15px;">أ</div>
+            <h3 style="font-size:20px;font-weight:700;">أوسمة محمدファ티</h3>
+            <p style="color:var(--text-muted);font-size:13px;">مدير النظام - Super Admin</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--text-muted);font-size:13px;">البريد الإلكتروني</span>
+              <span style="font-weight:500;">ososama7979@gmail.com</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--text-muted);font-size:13px;">رقم الهاتف</span>
+              <span style="font-weight:500;">+20 115 612 4827</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--text-muted);font-size:13px;">الدور</span>
+              <span style="font-weight:600;color:var(--accent-light);">Super Admin</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+              <span style="color:var(--text-muted);font-size:13px;">آخر تسجيل دخول</span>
+              <span style="font-weight:500;">21/11/2026 - 14:32</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;">
+              <span style="color:var(--text-muted);font-size:13px;">تاريخ الانضمام</span>
+              <span style="font-weight:500;">01/01/2024</span>
+            </div>
+          </div>
+          <div style="margin-top:20px;text-align:center;">
+            <button class="btn primary" style="padding:10px 30px;font-size:14px;">✏️ تعديل الملف الشخصي</button>
+            <button class="btn" style="padding:10px 30px;font-size:14px;margin-left:10px;">🔐 تغيير كلمة المرور</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- .content -->
+  </main>
+</div>
+
+<script>
+// Clock update
+function updateClock() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dateStr = now.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dateStr2 = now.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Cairo' });
+
+  document.getElementById('clock-time').textContent = timeStr;
+  document.getElementById('clock-date').textContent = dateStr;
+  document.getElementById('clock-time-att').textContent = timeStr;
+  document.getElementById('clock-date-att').textContent = 'الخميس, 21 نوفمبر 2026 - القاهرة, مصر';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Navigation
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    const page = this.dataset.page;
+    // Update nav
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    this.classList.add('active');
+    // Update pages
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    // Update title
+    const titles = {
+      'dashboard': 'لوحة التحكم',
+      'employees': 'إدارة الموظفين',
+      'departments': 'الأقسام',
+      'attendance': 'نظام الحضور والانصراف',
+      'attendance-history': 'سجلات الحضور',
+      'payroll': 'نظام الرواتب والأجور',
+      'payslips': 'كشوف الرواتب',
+      'recruitment': 'نظام التوظيف بالذكاء الاصطناعي',
+      'candidates': 'إدارة المرشحين',
+      'inventory': 'إدارة المخزن',
+      'purchase-orders': 'أوامر الشراء',
+      'analytics': 'لوحة التحليلات والذكاء الاصطناعي',
+      'predictions': 'التنبؤات بالذكاء الاصطناعي',
+      'settings': 'إعدادات النظام',
+      'profile': 'الملف الشخصي'
+    };
+    document.getElementById('page-title').textContent = titles[page] || 'The H.R';
+  });
+});
+
+// Dashboard tabs
+function switchDashboardTab(tab) {
+  document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('[id^="dash-"]').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('dash-' + tab).style.display = 'block';
+}
+
+// Add dash-tab class to tabs
+document.querySelectorAll('.tabs .tab').forEach(t => t.classList.add('dash-tab'));
+</script>
+</body>
+</html>

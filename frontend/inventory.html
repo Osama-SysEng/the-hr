@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The H.R - المخزن وسلسلة التوريد</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#07111f;color:#f1f5f9;min-height:100vh}
+.sidebar{width:260px;background:#0a1929;border-right:1px solid rgba(255,255,255,0.08);padding:20px;position:fixed;height:100vh;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+.sidebar-logo .icon{width:40px;height:40px;background:linear-gradient(135deg,#00b4d8,#0077b6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.sidebar-logo h2{font-size:16px;font-weight:700}
+.sidebar-logo span{font-size:11px;color:#64748b}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#94a3b8;text-decoration:none;margin-bottom:2px;transition:all 0.2s}
+.nav-item:hover{background:#13294a;color:#f1f5f9}
+.nav-item.active{background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(139,92,246,0.1));color:#a78bfa;border:1px solid rgba(139,92,246,0.2)}
+.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.nav-item .label{font-size:13px;font-weight:500}
+.main{margin-left:260px;flex:1;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.header h1{font-size:22px;font-weight:700}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.purple::before{background:#8b5cf6}
+.stat-card.green::before{background:#10b981}
+.stat-card.orange::before{background:#f59e0b}
+.stat-card.red::before{background:#ef4444}
+.stat-card.blue::before{background:#00b4d8}
+.stat-card .stat-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px}
+.stat-card.purple .stat-icon{background:rgba(139,92,246,0.15);color:#a78bfa}
+.stat-card.green .stat-icon{background:rgba(16,185,129,0.15);color:#10b981}
+.stat-card.orange .stat-icon{background:rgba(245,158,11,0.15);color:#f59e0b}
+.stat-card.red .stat-icon{background:rgba(239,68,68,0.15);color:#f87171}
+.stat-card.blue .stat-icon{background:rgba(0,180,216,0.15);color:#48cae4}
+.stat-card .stat-value{font-size:18px;font-weight:800;margin-bottom:3px}
+.stat-card .stat-label{font-size:10px;color:#64748b;font-weight:500}
+.table-container{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08)}
+.table-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+thead th{padding:8px 12px;text-align:right;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;background:#0a1929;border-bottom:1px solid rgba(255,255,255,0.08)}
+tbody td{padding:8px 12px;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08);color:#94a3b8}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#13294a}
+tbody tr:hover td{color:#f1f5f9}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:600}
+.status-badge.ok{background:rgba(16,185,129,0.15);color:#10b981}
+.status-badge.low{background:rgba(245,158,11,0.15);color:#f59e0b}
+.status-badge.out{background:rgba(239,68,68,0.15);color:#f87171}
+.status-badge.over{background:rgba(139,92,246,0.15);color:#a78bfa}
+.btn{padding:6px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#13294a;color:#94a3b8;transition:all 0.2s}
+.btn:hover{border-color:#a78bfa;color:#a78bfa}
+.btn.primary{background:#8b5cf6;color:#fff;border-color:#8b5cf6}
+.btn.primary:hover{background:#7c3aed}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-logo"><div class="icon">HR</div><div><h2>The H.R</h2><span>نظام الموارد البشرية</span></div></div>
+<a class="nav-item"><div class="icon" style="background:rgba(0,180,216,0.15);color:#48cae4;">👥</div><span class="label">الموظفين</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;">⏰</div><span class="label">الحضور</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#f87171;">💰</div><span class="label">الرواتب</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(16,185,129,0.15);color:#34d399;">🎯</div><span class="label">التوظيف</span></a>
+<a class="nav-item active"><div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">📦</div><span class="label">المخزن وسلسلة التوريد</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📈</div><span class="label">التحليلات</span></a>
+<a class="nav-item" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.08);padding-top:15px;"><div class="icon" style="background:rgba(100,116,139,0.15);color:#64748b;">⚙️</div><span class="label">الإعدادات</span></a>
+</div>
+<main class="main">
+<div class="header"><h1>📦 إدارة المخزن وسلسلة التوريد</h1><div style="display:flex;gap:8px;"><button class="btn">🔍 بحث</button><button class="btn primary">➕ منتج جديد</button></div></div>
+<div class="stats-grid">
+<div class="stat-card purple"><div class="stat-icon">📦</div><div class="stat-value">1,247</div><div class="stat-label">إجمالي المنتجات</div></div>
+<div class="stat-card green"><div class="stat-icon">📊</div><div class="stat-value">8,540</div><div class="stat-label">الكمية الإجمالية</div></div>
+<div class="stat-card orange"><div class="stat-icon">⚠️</div><div class="stat-value">23</div><div class="stat-label">منخفضة</div></div>
+<div class="stat-card red"><div class="stat-icon">🚫</div><div class="stat-value">5</div><div class="stat-label">خارج المخزون</div></div>
+<div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value">456K</div><div class="stat-label">قيمة المخزن (EGP)</div></div>
+</div>
+<div style="display:flex;gap:15px;">
+<div class="table-container" style="flex:2;max-height:calc(100vh - 260px);overflow-y:auto;">
+<div class="table-header"><h3>المنتجات - رصيد الحالية</h3><button class="btn primary">➕ منتج جديد</button></div>
+<table>
+<thead><tr><th>SKU</th><th>المنتج</th><th>الفئة</th><th>الكمية</th><th>سعر الشراء</th><th>قيمة</th><th>الحالة</th></tr></thead>
+<tbody>
+<tr><td>P-001</td><td>شاشات LED 24"</td><td>إلكترونيات</td><td style="font-weight:600;">120</td><td>3,200 EGP</td><td style="font-weight:600;color:#a78bfa;">384,000 EGP</td><td><span class="status-badge ok">كافي</span></td></tr>
+<tr><td>P-002</td><td>لابتوبات Dell XPS</td><td>إلكترونيات</td><td style="font-weight:600;">45</td><td>18,000 EGP</td><td style="font-weight:600;color:#a78bfa;">810,000 EGP</td><td><span class="status-badge ok">كافي</span></td></tr>
+<tr><td>P-003</td><td>طابعات HP Laser</td><td>أجهزة مكتبية</td><td style="font-weight:600;color:#f59e0b;">18</td><td>4,500 EGP</td><td style="font-weight:600;color:#a78bfa;">81,000 EGP</td><td><span class="status-badge low">منخفض</span></td></tr>
+<tr><td>P-004</td><td>ماوسات Logitech</td><td>إكسسوارات</td><td style="font-weight:600;">500</td><td>350 EGP</td><td style="font-weight:600;color:#a78bfa;">175,000 EGP</td><td><span class="status-badge ok">كافي</span></td></tr>
+<tr><td>P-005</td><td>كرات SWISS MEMORY</td><td>مستلزمات مكتبية</td><td style="font-weight:600;color:#ef4444;">0</td><td>120 EGP</td><td style="font-weight:600;color:#a78bfa;">0 EGP</td><td><span class="status-badge out">خارج المخزون</span></td></tr>
+<tr><td>P-006</td><td>بطاريات لابتوب</td><td>إكسسوارات</td><td style="font-weight:600;color:#f59e0b;">25</td><td>850 EGP</td><td style="font-weight:600;color:#a78bfa;">21,250 EGP</td><td><span class="status-badge low">منخفض</span></td></tr>
+<tr><td>P-007</td><td>شبكات WiFi 6</td><td>إلكترونيات</td><td style="font-weight:600;">32</td><td>2,100 EGP</td><td style="font-weight:600;color:#a78bfa;">67,200 EGP</td><td><span class="status-badge ok">كافي</span></td></tr>
+<tr><td>P-008</td><td>كاميرات IP</td><td>أجهزة أمن</td><td style="font-weight:600;">15</td><td>3,500 EGP</td><td style="font-weight:600;color:#a78bfa;">52,500 EGP</td><td><span class="status-badge ok">كافي</span></td></tr>
+</tbody>
+</table>
+</div>
+<div class="stat-card purple" style="flex:1;padding:20px;">
+<h4 style="font-size:11px;color:#64748b;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">منخفضة - تحتاج مراجعة</h4>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<div style="display:flex;justify-content:space-between;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;"><span style="color:#94a3b8;">🔴 طابعات HP Laser</span><span style="font-weight:600;color:#f87171;">18 (المطلوب: 25)</span></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;"><span style="color:#94a3b8;">🟡 كراسات A4</span><span style="font-weight:600;color:#f59e0b;">120 (المطلوب: 200)</span></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;"><span style="color:#94a3b8;">🟡 بطاريات لابتوب</span><span style="font-weight:600;color:#f59e0b;">25 (المطلوب: 50)</span></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#94a3b8;">🟢 شاشات LED 24"</span><span style="font-weight:600;color:#10b981;">120 (المطلوب: 20) ✓</span></div>
+</div>
+<button class="btn primary" style="margin-top:15px;width:100%;">📦 طلب إعادة تزويد</button>
+</div>
+</div>
+</main>
+</body>
+</html>

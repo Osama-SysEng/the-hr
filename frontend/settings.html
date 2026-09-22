@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The H.R - الإعدادات</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#07111f;color:#f1f5f9;min-height:100vh}
+.sidebar{width:260px;background:#0a1929;border-right:1px solid rgba(255,255,255,0.08);padding:20px;position:fixed;height:100vh;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+.sidebar-logo .icon{width:40px;height:40px;background:linear-gradient(135deg,#00b4d8,#0077b6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.sidebar-logo h2{font-size:16px;font-weight:700}
+.sidebar-logo span{font-size:11px;color:#64748b}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#94a3b8;text-decoration:none;margin-bottom:2px;transition:all 0.2s}
+.nav-item:hover{background:#13294a;color:#f1f5f9}
+.nav-item.active{background:linear-gradient(135deg,rgba(100,116,139,0.15),rgba(100,116,139,0.1));color:#94a3b8;border:1px solid rgba(100,116,139,0.2)}
+.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.nav-item .label{font-size:13px;font-weight:500}
+.main{margin-left:260px;flex:1;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.header h1{font-size:22px;font-weight:700}
+.card{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:15px}
+.card h3{font-size:13px;font-weight:600;margin-bottom:15px;color:#48cae4}
+.card-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);align-items:center}
+.card-row:last-child{border-bottom:none}
+.card-row .label{font-size:12px;color:#64748b}
+.card-row .value{font-size:12px;font-weight:600;color:#f1f5f9}
+.card-row input[type="text"],.card-row input[type="email"],.card-row input[type="password"],.card-row select,.card-row textarea{width:100%;max-width:300px;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:#0a1929;color:#f1f5f9;font-size:12px;margin-top:4px}
+.card-row input:focus{outline:none;border-color:#00b4d8}
+.card-row textarea{width:100%;margin-top:4px}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#13294a;color:#94a3b8;transition:all 0.2s}
+.btn:hover{border-color:#00b4d8;color:#48cae4}
+.btn.primary{background:#00b4d8;color:#fff;border-color:#00b4d8}
+.btn.primary:hover{background:#0077b6}
+.btn.danger{background:#ef4444;color:#fff;border-color:#ef4444}
+.btn.danger:hover{background:#dc2626}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;background:#00b4d8;color:#fff}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-logo"><div class="icon">HR</div><div><h2>The H.R</h2><span>نظام الموارد البشرية</span></div></div>
+<a class="nav-item"><div class="icon" style="background:rgba(0,180,216,0.15);color:#48cae4;">👥</div><span class="label">الموظفين</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;">⏰</div><span class="label">الحضور</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#f87171;">💰</div><span class="label">الرواتب</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(16,185,129,0.15);color:#34d399;">🎯</div><span class="label">التوظيف</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">📦</div><span class="label">المخزن</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📈</div><span class="label">التحليلات</span></a>
+<a class="nav-item active"><div class="icon" style="background:rgba(100,116,139,0.15);color:#94a3b8;">⚙️</div><span class="label">الإعدادات</span></a>
+<a class="nav-item" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.08);padding-top:15px;"><div class="icon" style="background:rgba(100,116,139,0.15);color:#64748b;">👤</div><span class="label">الملف الشخصي</span></a>
+</div>
+<main class="main">
+<div class="header"><h1>⚙️ إعدادات النظام</h1><button class="btn">↩️ رجوع للواجهة الرئيسية</button></div>
+<div class="card">
+<h3>🏢 إعدادات الشركة</h3>
+<div class="card-row"><span class="label">اسم الشركة</span><input type="text" value="شركة تقنية المعلومات - Egypt"></div>
+<div class="card-row"><span class="label">القطاع</span><input type="text" value="التكنولوجيا والمعلومات"></div>
+<div class="card-row"><span class="label">الدولة</span><select><option>مصر</option><option>السعودية</option><option>الإمارات</option></select></div>
+<div class="card-row"><span class="label">العملة</span><select><option>EGP</option><option>USD</option><option>EUR</option></select></div>
+<div class="card-row"><span class="label">المنطقة الزمنية</span><select><option>Africa/Cairo</option><option>Asia/Dubai</option></select></div>
+<div class="card-row"><span class="label">المستوى</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>Enterprise</option></select></div>
+<div class="card-row"><span class="label">الحد الأقصى للموظفين</span><input type="text" value="500"></div>
+<div class="card-row"><span class="label">العدد الحالي</span><span class="value" style="color:#10b981;">147 موظف</span></div>
+<div style="margin-top:15px;display:flex;gap:10px;"><button class="btn primary">💾 حفظ التغييرات</button><button class="btn">رجوع</button></div>
+</div>
+<div class="card">
+<h3>🔐 إعدادات الأمان</h3>
+<div class="card-row"><span class="label">نظام المصادقة</span><span class="value" style="color:#10b981;">JWT + RBAC</span></div>
+<div class="card-row"><span class="label">بيئة التشغيل</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>Production</option></select></div>
+<div class="card-row"><span class="label">وضع المراجعة</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>مفعل</option></select></div>
+<div class="card-row"><span class="label">تسجيل الأحداث</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>مفعل</option></select></div>
+<div class="card-row"><span class="label">تشفير البيانات</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>AES-256</option></select></div>
+<div class="card-row"><span class="label">تاريخ المراجعة الأمنية</span><span class="value">21/11/2026</span></div>
+<div style="margin-top:15px;display:flex;gap:10px;"><button class="btn primary">🔄 إعادة تعيين كلمة المرور</button><button class="btn danger">🗑️ حذف الحساب</button></div>
+</div>
+<div class="card">
+<h3>📧 إعدادات الاتصالات</h3>
+<div class="card-row"><span class="label">SMTP Host</span><input type="text" value="smtp.gmail.com"></div>
+<div class="card-row"><span class="label">SMTP Port</span><input type="text" value="587"></div>
+<div class="card-row"><span class="label">SMTP User</span><input type="text" value="admin@company.com"></div>
+<div class="card-row"><span class="label">SMTP Password</span><input type="password" value="••••••••"></div>
+<div class="card-row"><span class="label">SMS Gateway</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>Twilio (مفعل)</option></select></div>
+<div class="card-row"><span class="label">Email Gateway</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>SendGrid (مفعل)</option></select></div>
+<div class="card-row"><span class="label">تكامل LinkedIn</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>مفعل</option></select></div>
+<div class="card-row"><span class="label">تكامل Wuzzuf</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>مفعل</option></select></div>
+<div style="margin-top:15px;display:flex;gap:10px;"><button class="btn primary">💾 حفظ الإعدادات</button><button class="btn">اختبار الاتصال</button></div>
+</div>
+<div class="card">
+<h3>🤖 إعدادات الذكاء الاصطناعي</h3>
+<div class="card-row"><span class="label">CV Screening Model</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>GPT-4o-mini (مفعل)</option></select></div>
+<div class="card-row"><span class="label">AI Interview Model</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>Gemini 1.5 Pro (مفعل)</option></select></div>
+<div class="card-row"><span class="label">اللغة</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>Arabic (RTL) + English</option></select></div>
+<div class="card-row"><span class="label">Face Recognition</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>OpenCV + face_recognition (مفعل)</option></select></div>
+<div class="card-row"><span class="label">Arabic NLP</span><select class="tag" style="padding:4px 10px;border-radius:12px;border:none;background:#10b981;color:#fff;font-size:11px;"><option>CAMeL Tools (مفعل)</option></select></div>
+<div class="card-row"><span class="label">API Keys</span><span class="value" style="color:#10b981;">مفعولة (آمنة)</span></div>
+<div style="margin-top:15px;display:flex;gap:10px;"><button class="btn primary">🔄 إعادة تعيين API Keys</button><button class="btn">اختبار الذكاء الاصطناعي</button></div>
+</div>
+</div>
+</main>
+</body>
+</html>

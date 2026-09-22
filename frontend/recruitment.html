@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The H.R - التوظيف بالذكاء الاصطناعي</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#07111f;color:#f1f5f9;min-height:100vh}
+.sidebar{width:260px;background:#0a1929;border-right:1px solid rgba(255,255,255,0.08);padding:20px;position:fixed;height:100vh;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+.sidebar-logo .icon{width:40px;height:40px;background:linear-gradient(135deg,#00b4d8,#0077b6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.sidebar-logo h2{font-size:16px;font-weight:700}
+.sidebar-logo span{font-size:11px;color:#64748b}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#94a3b8;text-decoration:none;margin-bottom:2px;transition:all 0.2s}
+.nav-item:hover{background:#13294a;color:#f1f5f9}
+.nav-item.active{background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.1));color:#34d399;border:1px solid rgba(16,185,129,0.2)}
+.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.nav-item .label{font-size:13px;font-weight:500}
+.main{margin-left:260px;flex:1;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.header h1{font-size:22px;font-weight:700}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#13294a;color:#94a3b8;transition:all 0.2s}
+.btn:hover{border-color:#34d399;color:#34d399}
+.btn.primary{background:#10b981;color:#fff;border-color:#10b981}
+.btn.primary:hover{background:#059669}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px}
+.stat-card{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:15px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.green::before{background:#10b981}
+.stat-card.blue::before{background:#00b4d8}
+.stat-card.orange::before{background:#f59e0b}
+.stat-card.red::before{background:#ef4444}
+.stat-card.purple::before{background:#8b5cf6}
+.stat-card .stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:10px}
+.stat-card.green .stat-icon{background:rgba(16,185,129,0.15);color:#10b981}
+.stat-card.blue .stat-icon{background:rgba(0,180,216,0.15);color:#48cae4}
+.stat-card.orange .stat-icon{background:rgba(245,158,11,0.15);color:#f59e0b}
+.stat-card.red .stat-icon{background:rgba(239,68,68,0.15);color:#f87171}
+.stat-card.purple .stat-icon{background:rgba(139,92,246,0.15);color:#a78bfa}
+.stat-card .stat-value{font-size:22px;font-weight:800;margin-bottom:4px}
+.stat-card .stat-label{font-size:11px;color:#64748b;font-weight:500}
+.pipeline{display:flex;gap:10px;margin-bottom:20px}
+.pipeline-step{flex:1;background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:15px;text-align:center}
+.pipeline-step .count{font-size:28px;font-weight:800}
+.pipeline-step .label{font-size:10px;color:#64748b;margin-top:5px;text-transform:uppercase}
+.pipeline-step.new{border-top:3px solid #64748b}
+.pipeline-step.new .count{color:#64748b}
+.pipeline-step.screening{border-top:3px solid #00b4d8}
+.pipeline-step.screening .count{color:#48cae4}
+.pipeline-step.interview{border-top:3px solid #f59e0b}
+.pipeline-step.interview .count{color:#f59e0b}
+.pipeline-step.hired{border-top:3px solid #10b981}
+.pipeline-step.hired .count{color:#10b981}
+.table-container{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08)}
+.table-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 14px;text-align:right;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;background:#0a1929;border-bottom:1px solid rgba(255,255,255,0.08)}
+tbody td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.08);color:#94a3b8}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#13294a}
+tbody tr:hover td{color:#f1f5f9}
+.score-ring{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;position:relative}
+.score-ring::after{content:'';position:absolute;inset:3px;border-radius:50%;background:#0d2137}
+.score-ring.high{background:conic-gradient(#10b981 0%,#10b981 100%,transparent 100%);color:#10b981}
+.score-ring.medium{background:conic-gradient(#f59e0b 0%,#f59e0b 60%,transparent 60%);color:#f59e0b}
+.score-ring.low{background:conic-gradient(#ef4444 0%,#ef4444 40%,transparent 40%);color:#f87171}
+.score-ring .score-value{position:relative;z-index:1}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.status-badge.new{background:rgba(100,116,139,0.15);color:#94a3b8}
+.status-badge.screening{background:rgba(0,180,216,0.15);color:#48cae4}
+.status-badge.interview{background:rgba(245,158,11,0.15);color:#f59e0b}
+.status-badge.hired{background:rgba(16,185,129,0.15);color:#10b981}
+.status-badge.rejected{background:rgba(239,68,68,0.15);color:#f87171}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-logo"><div class="icon">HR</div><div><h2>The H.R</h2><span>نظام الموارد البشرية</span></div></div>
+<a class="nav-item"><div class="icon" style="background:rgba(0,180,216,0.15);color:#48cae4;">👥</div><span class="label">الموظفين</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;">⏰</div><span class="label">الحضور</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#f87171;">💰</div><span class="label">الرواتب</span></a>
+<a class="nav-item active"><div class="icon" style="background:rgba(16,185,129,0.15);color:#34d399;">🎯</div><span class="label">التوظيف بالذكاء الاصطناعي</span><span class="badge" style="background:#10b981;color:#fff;">نشط</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📦</div><span class="label">المخزن</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📈</div><span class="label">التحليلات</span></a>
+<a class="nav-item" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.08);padding-top:15px;"><div class="icon" style="background:rgba(100,116,139,0.15);color:#64748b;">⚙️</div><span class="label">الإعدادات</span></a>
+</div>
+<main class="main">
+<div class="header"><h1>🎯 نظام التوظيف بالذكاء الاصطناعي</h1><div style="display:flex;gap:8px;"><button class="btn">🔍 بحث</button><button class="btn primary">➕ وظيفة جديدة</button></div></div>
+<div class="stats-grid">
+<div class="stat-card green"><div class="stat-icon">📝</div><div class="stat-value">47</div><div class="stat-label">طلبات التوظيف</div><div class="stat-change" style="color:#64748b;">12 نشطة</div></div>
+<div class="stat-card blue"><div class="stat-icon">👤</div><div class="stat-value">238</div><div class="stat-label">مرشح مبتش</div><div class="stat-change up">↑ +12 اليوم</div></div>
+<div class="stat-card orange"><div class="stat-icon">🔍</div><div class="stat-value">38</div><div class="stat-label">قيد الفحص AI</div><div class="stat-change" style="color:#f59e0b;">في queue</div></div>
+<div class="stat-card purple"><div class="stat-icon">🤖</div><div class="stat-value">12</div><div class="stat-label">مقابلات آلية</div><div class="stat-change" style="color:#a78bfa;">3 إكملت</div></div>
+</div>
+<div class="pipeline">
+<div class="pipeline-step new"><div class="count" style="color:#64748b;">23</div><div class="label">🆕 جديدة</div></div>
+<div class="pipeline-step screening"><div class="count" style="color:#48cae4;">38</div><div class="label">🔍 فحص AI</div></div>
+<div class="pipeline-step interview"><div class="count" style="color:#f59e0b;">12</div><div class="label">🤖 مقابلات آلية</div></div>
+<div class="pipeline-step hired"><div class="count" style="color:#10b981;">7</div><div class="label">✅ تم التوظيف</div></div>
+</div>
+<div style="display:flex;gap:15px;">
+<div class="table-container" style="flex:2;max-height:calc(100vh - 300px);overflow-y:auto;">
+<div class="table-header"><h3>🏆 المرشحين - أعلى الدرجات</h3><div style="display:flex;gap:8px;"><button class="btn">🔍 تصفية</button><button class="btn primary">➕ إضافة مرشح</button></div></div>
+<table>
+<thead><tr><th>#</th><th>الاسم</th><th>الوظيفة</th><th>درجة CV</th><th>مرحلة</th><th>تقييم</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(16,185,129,0.15);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">ن</div><span>نور هاني</span></div></td><td>مصمم واجهات</td><td><div style="display:flex;align-items:center;gap:6px;"><div class="score-ring high"><span class="score-value">94%</span></div><span style="font-weight:700;color:#10b981;font-size:14px;">94%</span></div></td><td><span class="status-badge hired">✅ تم التوظيف</span></td><td style="font-size:11px;color:#64748b;">منتجات جاهزة ✓</td></tr>
+<tr><td>2</td><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(0,180,216,0.15);color:#48cae4;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">إ</div><span>إبراهيم فاروق</span></div></td><td>مطورバックエンド</td><td><div style="display:flex;align-items:center;gap:6px;"><div class="score-ring high"><span class="score-value">87%</span></div><span style="font-weight:700;color:#48cae4;font-size:14px;">87%</span></div></td><td><span class="status-badge screening">فحص AI</span></td><td style="font-size:11px;color:#64748b;">CV screening complete ✓</td></tr>
+<tr><td>3</td><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,0.15);color:#f59e0b;display:flex;align-items:center;justify:center;font-size:10px;font-weight:700;">م</div><span>مريم حسن</span></div></td><td>محللة بيانات</td><td><div style="display:flex;align-items:center;gap:6px;"><div class="score-ring high"><span class="score-value">78%</span></div><span style="font-weight:700;color:#f59e0b;font-size:14px;">78%</span></div></td><td><span class="status-badge interview">مقابلة آلية</span></td><td style="font-size:11px;color:#64748b;">Interview scheduled</td></tr>
+<tr><td>4</td><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,0.15);color:#f87171;display:flex;align-items:center;justify:center;font-size:10px;font-weight:700;">ع</div><span>علي عبد الله</span></div></td><td>مهندس DevOps</td><td><div style="display:flex;align-items:center;gap:6px;"><div class="score-ring low"><span class="score-value">68%</span></div><span style="font-weight:700;color:#f87171;font-size:14px;">68%</span></div></td><td><span class="status-badge rejected">مرفوض</span></td><td style="font-size:11px;color:#f87171;">Score too low</td></tr>
+<tr><td>5</td><td><div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(139,92,246,0.15);color:#a78bfa;display:flex;align-items:center;justify:center;font-size:10px;font-weight:700;">ف</div><span>فاطمة حمدي</span></div></td><td>مطورフロントエンド</td><td><div style="display:flex;align-items:center;gap:6px;"><div class="score-ring high"><span class="score-value">82%</span></div><span style="font-weight:700;color:#a78bfa;font-size:14px;">82%</span></div></td><td><span class="status-badge screening">فحص AI</span></td><td style="font-size:11px;color:#64748b;">LLM extraction complete</td></tr>
+</tbody>
+</table>
+</div>
+<div class="stat-card green" style="flex:1;padding:20px;">
+<h4 style="font-size:11px;color:#64748b;margin-bottom:15px;text-transform:uppercase;letter-spacing:0.5px;">كيف يعمل الفحص بالذكاء الاصطناعي</h4>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:11px;color:#94a3b8;">
+<div style="display:flex;gap:8px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:#10b981;color:#fff;display:flex;align-items:center;justify:center;font-size:9px;font-weight:700;flex-shrink:0;">1</div><div><strong>رفع CVs (PDF/DOCX/TXT)</strong><br><span style="color:#64748b;"> حتى 500 ملف في مرة واحدة</span></div></div>
+<div style="display:flex;gap:8px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:#10b981;color:#fff;display:flex;align-items:center;justify:center;font-size:9px;font-weight:700;flex-shrink:0;">2</div><div><strong>استخراج النص المحلي</strong><br><span style="color:#64748b;"> لا تخرج أي بيانات للخارج</span></div></div>
+<div style="display:flex;gap:8px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:#10b981;color:#fff;display:flex;align-items:center;justify:center;font-size:9px;font-weight:700;flex-shrink:0;">3</div><div><strong>LLM Extraction (GPT-4o-mini)</strong><br><span style="color:#64748b;"> استخراج مهارات، خبرة، تعليم</span></div></div>
+<div style="display:flex;gap:8px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:#10b981;color:#fff;display:flex;align-items:center;justify:center;font-size:9px;font-weight:700;flex-shrink:0;">4</div><div><strong>Keyword Scoring + AI Ranking</strong><br><span style="color:#64748b;"> درجة كل معيار + ترتيب نهائي</span></div></div>
+<div style="display:flex;gap:8px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:#10b981;color:#fff;display:flex;align-items:center;justify:center;font-size:9px;font-weight:700;flex-shrink:0;">5</div><div><strong>تقرير reviewer + Human Gate</strong><br><span style="color:#64748b;"> مراجعة بشرية مطلوبة قبل التوظيف</span></div></div>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>

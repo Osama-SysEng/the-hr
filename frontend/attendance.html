@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The H.R - الحضور والانصراف</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#07111f;color:#f1f5f9;min-height:100vh}
+.sidebar{width:260px;background:#0a1929;border-right:1px solid rgba(255,255,255,0.08);padding:20px;position:fixed;height:100vh;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+.sidebar-logo .icon{width:40px;height:40px;background:linear-gradient(135deg,#00b4d8,#0077b6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.sidebar-logo h2{font-size:16px;font-weight:700}
+.sidebar-logo span{font-size:11px;color:#64748b}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#94a3b8;text-decoration:none;margin-bottom:2px;transition:all 0.2s}
+.nav-item:hover{background:#13294a;color:#f1f5f9}
+.nav-item.active{background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.1));color:#fbbf24;border:1px solid rgba(245,158,11,0.2)}
+.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.nav-item .label{font-size:13px;font-weight:500}
+.main{margin-left:260px;flex:1;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.header h1{font-size:22px;font-weight:700}
+.clock-box{display:flex;align-items:center;gap:25px;background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.05));border:1px solid rgba(245,158,11,0.2);border-radius:14px;padding:20px}
+.clock-display{text-align:center;padding:20px 30px;background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05));border:1px solid rgba(245,158,11,0.3);border-radius:14px}
+.clock-time{font-size:48px;font-weight:800;color:#fbbf24;font-family:'Courier New',monospace}
+.clock-date{font-size:11px;color:#64748b;margin-top:5px}
+.clock-stats{display:flex;flex-direction:column;gap:12px}
+.clock-stat{text-align:center}
+.clock-stat .value{font-size:28px;font-weight:800;margin-bottom:4px}
+.clock-stat .label{font-size:10px;color:#64748b;text-transform:uppercase}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#13294a;color:#94a3b8;transition:all 0.2s}
+.btn:hover{border-color:#fbbf24;color:#fbbf24}
+.btn.primary{background:#f59e0b;color:#000;border-color:#f59e0b}
+.btn.primary:hover{background:#d97706}
+.table-container{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08)}
+.table-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 14px;text-align:right;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;background:#0a1929;border-bottom:1px solid rgba(255,255,255,0.08)}
+tbody td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.08);color:#94a3b8}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#13294a}
+tbody tr:hover td{color:#f1f5f9}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.status-badge.present{background:rgba(16,185,129,0.15);color:#10b981}
+.status-badge.late{background:rgba(245,158,11,0.15);color:#f59e0b}
+.status-badge.absent{background:rgba(239,68,68,0.15);color:#ef4444}
+.status-badge.clocked-in{background:rgba(0,180,216,0.15);color:#48cae4}
+.emp-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.verify-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:4px}
+.verify-badge.biometric{background:rgba(16,185,129,0.15);color:#10b981}
+.verify-badge.gps{background:rgba(139,92,246,0.15);color:#a78bfa}
+.verify-badge.face{background:rgba(245,158,11,0.15);color:#f59e0b}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-logo"><div class="icon">HR</div><div><h2>The H.R</h2><span>نظام الموارد البشرية</span></div></div>
+<a class="nav-item"><div class="icon" style="background:rgba(0,180,216,0.15);color:#48cae4;">👥</div><span class="label">الموظفين</span></a>
+<a class="nav-item active"><div class="icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;">⏰</div><span class="label">الحضور والانصراف</span><span class="badge" style="background:#f59e0b;color:#000;">الآن</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">💰</div><span class="label">الرواتب</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">🎯</div><span class="label">التوظيف</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📦</div><span class="label">المخزن</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">📈</div><span class="label">التحليلات</span></a>
+<a class="nav-item" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.08);padding-top:15px;"><div class="icon" style="background:rgba(100,116,139,0.15);color:#64748b;">⚙️</div><span class="label">الإعدادات</span></a>
+</div>
+<main class="main">
+<div class="header"><h1>⏰ نظام الحضور والانصراف</h1><div style="display:flex;gap:8px;"><button class="btn">📅 تاريخ</button><button class="btn primary">➕ تسجيل دخول</button></div></div>
+<div class="clock-box">
+<div class="clock-display"><div class="clock-time" id="clock">14:32:17</div><div class="clock-date" id="date">الخميس, 21 نوفمبر 2026 - القاهرة, مصر</div></div>
+<div class="clock-stats">
+<div class="clock-stat"><div class="value" style="color:#10b981;font-size:32px;">138</div><div class="label" style="font-size:10px;">حاضرون الآن</div></div>
+<div class="clock-stat"><div class="value" style="font-size:20px;color:#64748b;font-weight:400;">5</div><div class="label" style="font-size:10px;">غائبون</div></div>
+<div class="clock-stat"><div class="value" style="font-size:20px;color:#f59e0b;font-weight:400;">4</div><div class="label" style="font-size:10px;">متأخرون</div></div>
+<div class="clock-stat"><div class="value" style="font-size:20px;color:#a78bfa;font-weight:400;">0</div><div class="label" style="font-size:10px;">في انتظار التأكد</div></div>
+</div>
+</div>
+<div class="table-container" style="margin-top:15px;max-height:calc(100vh - 250px);overflow-y:auto;">
+<div class="table-header"><h3>سجلات الحضور - اليوم</h3><div style="display:flex;gap:8px;"><button class="btn">📅 اختيار تاريخ</button><button class="btn">📊 تقرير</button></div></div>
+<table>
+<thead><tr><th>الموظف</th><th>القسم</th><th>تسجيل الدخول</th><th>تسجيل الخروج</th><th>ساعات</th><th>الحالة</th><th>التأكد</th><th>التوقيع</th></tr></thead>
+<tbody>
+<tr><td><div class="emp-avatar" style="background:rgba(0,180,216,0.15);color:#48cae4;">أ</div><span>أحمد محمد</span></td><td>تطوير البرمجيات</td><td style="color:#10b981;font-weight:600;">08:42 AM</td><td style="color:#64748b;">--:-- --</td><td style="font-weight:600;">08h 30m</td><td><span class="status-badge present">حاضر</span></td><td><span class="verify-badge biometric">Finger ✓</span></td><td><span style="color:#10b981;">✓</span></td></tr>
+<tr><td><div class="emp-avatar" style="background:rgba(139,92,246,0.15);color:#a78bfa;">س</div><span>سارة علي</span></td><td>التصميم</td><td style="color:#10b981;font-weight:600;">09:05 AM</td><td style="color:#64748b;">--:-- --</td><td style="font-weight:600;">07h 57m</td><td><span class="status-badge present">حاضرة</span></td><td><span class="verify-badge face">Face ✓ 98%</span></td><td><span style="color:#10b981;">✓</span></td></tr>
+<tr><td><div class="emp-avatar" style="background:rgba(245,158,11,0.15);color:#f59e0b;">م</div><span>محمد صلاح</span></td><td>المبيعات</td><td style="color:#f59e0b;font-weight:600;">09:35 AM</td><td style="color:#64748b;">--:-- --</td><td style="font-weight:600;">07h 27m</td><td><span class="status-badge late">متأخر (35 دقيقة)</span></td><td><span class="verify-badge gps">GPS ✓</span></td><td><span style="color:#10b981;">✓</span></td></tr>
+<tr><td><div class="emp-avatar" style="background:rgba(16,185,129,0.15);color:#10b981;">خ</div><span>خالد عبد الله</span></td><td>الدعم الفني</td><td style="color:#10b981;font-weight:600;">08:30 AM</td><td style="color:#64748b;">--:-- --</td><td style="font-weight:600;">08h 32m</td><td><span class="status-badge present">حاضر</span></td><td><span class="verify-badge biometric">Finger ✓</span></td><td><span style="color:#10b981;">✓</span></td></tr>
+<tr><td><div class="emp-avatar" style="background:rgba(239,68,68,0.15);color:#ef4444;">ن</div><span>نور هاني</span></td><td>التسويق</td><td style="color:#ef4444;">---:---</td><td style="color:#64748b;">---:---</td><td style="color:#64748b;">---</td><td><span class="status-badge absent">غائب</span></td><td><span style="color:#64748b;">---</span></td><td><span style="color:#ef4444;">✗</span></td></tr>
+</tbody>
+</table>
+</div>
+</main>
+<script>
+function updateClock(){const now=new Date();document.getElementById('clock').textContent=now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});document.getElementById('date').textContent=now.toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+setInterval(updateClock,1000);updateClock();
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The H.R - التحليلات والتنبؤات بالذكاء الاصطناعي</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#07111f;color:#f1f5f9;min-height:100vh}
+.sidebar{width:260px;background:#0a1929;border-right:1px solid rgba(255,255,255,0.08);padding:20px;position:fixed;height:100vh;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+.sidebar-logo .icon{width:40px;height:40px;background:linear-gradient(135deg,#00b4d8,#0077b6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.sidebar-logo h2{font-size:16px;font-weight:700}
+.sidebar-logo span{font-size:11px;color:#64748b}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#94a3b8;text-decoration:none;margin-bottom:2px;transition:all 0.2s}
+.nav-item:hover{background:#13294a;color:#f1f5f9}
+.nav-item.active{background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.1));color:#f87171;border:1px solid rgba(239,68,68,0.2)}
+.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.nav-item .label{font-size:13px;font-weight:500}
+.main{margin-left:260px;flex:1;padding:20px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.header h1{font-size:22px;font-weight:700}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px}
+.stat-card{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:15px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.blue::before{background:#00b4d8}
+.stat-card.green::before{background:#10b981}
+.stat-card.orange::before{background:#f59e0b}
+.stat-card.red::before{background:#ef4444}
+.stat-card.purple::before{background:#8b5cf6}
+.stat-card .stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:10px}
+.stat-card.blue .stat-icon{background:rgba(0,180,216,0.15);color:#48cae4}
+.stat-card.green .stat-icon{background:rgba(16,185,129,0.15);color:#10b981}
+.stat-card.orange .stat-icon{background:rgba(245,158,11,0.15);color:#f59e0b}
+.stat-card.red .stat-icon{background:rgba(239,68,68,0.15);color:#f87171}
+.stat-card.purple .stat-icon{background:rgba(139,92,246,0.15);color:#a78bfa}
+.stat-card .stat-value{font-size:22px;font-weight:800;margin-bottom:4px}
+.stat-card .stat-label{font-size:11px;color:#64748b;font-weight:500}
+.stat-card .stat-change{font-size:10px;margin-top:6px;display:flex;align-items:center;gap:3px}
+.stat-change.up{color:#10b981}
+.stat-change.down{color:#ef4444}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.table-container{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08)}
+.table-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+thead th{padding:8px 12px;text-align:right;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;background:#0a1929;border-bottom:1px solid rgba(255,255,255,0.08)}
+tbody td{padding:8px 12px;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08);color:#94a3b8}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#13294a}
+tbody tr:hover td{color:#f1f5f9}
+.chart-box{background:#0d2137;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:15px}
+.chart-box h4{font-size:11px;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
+.chart{display:flex;align-items:flex-end;gap:6px;height:100px}
+.chart-bar{width:20px;background:linear-gradient(to top,#00b4d8,#48cae4);border-radius:3px 3px 0 0;transition:height 0.3s}
+.chart-bar.animate{animation:grow 0.5s ease-out}
+@keyframes grow{from{height:0}to{height:var(--h)}}
+.chart-labels{display:flex;justify-content:space-between;font-size:9px;color:#64748b;margin-top:5px}
+.risk-meter{width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:5px}
+.risk-meter .fill{height:100%;background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981);border-radius:4px;transition:width 0.5s}
+.risk-label{display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-top:3px}
+.alert-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 15px;display:flex;align-items:center;gap:10px;margin-bottom:15px}
+.alert-banner .alert-icon{color:#ef4444;font-size:18px}
+.alert-banner .alert-text{font-size:12px;color:#f1f5f9}
+.alert-banner .alert-value{font-size:12px;font-weight:700;color:#ef4444}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-logo"><div class="icon">HR</div><div><h2>The H.R</h2><span>نظام الموارد البشرية</span></div></div>
+<a class="nav-item"><div class="icon" style="background:rgba(0,180,216,0.15);color:#48cae4;">👥</div><span class="label">الموظفين</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(245,158,11,0.15);color:#fbbf24;">⏰</div><span class="label">الحضور</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(239,68,68,0.15);color:#f87171;">💰</div><span class="label">الرواتب</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(16,185,129,0.15);color:#34d399;">🎯</div><span class="label">التوظيف</span></a>
+<a class="nav-item"><div class="icon" style="background:rgba(139,92,246,0.15);color:#a78bfa;">📦</div><span class="label">المخزن</span></a>
+<a class="nav-item active"><div class="icon" style="background:rgba(239,68,68,0.15);color:#f87171;">📈</div><span class="label">التحليلات والتنبؤات بالذكاء الاصطناعي</span></a>
+<a class="nav-item" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.08);padding-top:15px;"><div class="icon" style="background:rgba(100,116,139,0.15);color:#64748b;">⚙️</div><span class="label">الإعدادات</span></a>
+</div>
+<main class="main">
+<div class="header"><h1>📈 لوحة التحليلات والتنبؤات بالذكاء الاصطناعي</h1><button class="btn">📥 تصدير تقرير</button></div>
+<div class="alert-banner"><div class="alert-icon">⚠️</div><div class="alert-text"><strong>تنبيه ذكاء اصطناعي:</strong> <span class="alert-value">3 موظفين</span> معرضون لمغادرة الشركة خلال 90 يومًا القادمة</div></div>
+<div class="stats-grid">
+<div class="stat-card blue"><div class="stat-icon">👥</div><div class="stat-value">147</div><div class="stat-label">إجمالي الموظفين</div><div class="stat-change up">↑ +3 هذا الشهر</div></div>
+<div class="stat-card green"><div class="stat-icon">📈</div><div class="stat-value">94%</div><div class="stat-label">معدل الحضور (ت 이상의)</div><div class="stat-change up">↑ من 91% الشهر الماضي</div></div>
+<div class="stat-card orange"><div class="stat-icon">💰</div><div class="stat-value">128.5K</div><div class="stat-label">تكلفة الرواتب الشهرية</div><div class="stat-change" style="color:#64748b;">متوسط 1,284/موظف</div></div>
+<div class="stat-card purple"><div class="stat-icon">🎯</div><div class="stat-value">78%</div><div class="stat-label">معدل قبول المرشحين</div><div class="stat-change up">↑ من 65% الشهر الماضي</div></div>
+</div>
+<div class="grid-2" style="margin-bottom:15px;">
+<div class="chart-box">
+<h4>اتجاهات الحضور - آخر 30 يوم</h4>
+<div class="chart" id="attendance-chart">
+<div class="chart-bar animate" style="--h:70px;"></div><div class="chart-bar animate" style="--h:85px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:78px;"></div><div class="chart-bar animate" style="--h:92px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:88px;"></div><div class="chart-bar animate" style="--h:95px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:94px;"></div><div class="chart-bar animate" style="--h:88px;"></div>
+<div class="chart-bar animate" style="--h:75px;"></div><div class="chart-bar animate" style="--h:85px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:92px;"></div><div class="chart-bar animate" style="--h:60px;"></div>
+<div class="chart-bar animate" style="--h:70px;"></div><div class="chart-bar animate" style="--h:80px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:88px;"></div><div class="chart-bar animate" style="--h:95px;"></div>
+<div class="chart-bar animate" style="--h:90px;"></div><div class="chart-bar animate" style="--h:78px;"></div>
+<div class="chart-bar animate" style="--h:82px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:90px;"></div>
+<div class="chart-bar animate" style="--h:94px;"></div>
+<div class="chart-bar animate" style="--h:85px;"></div>
+<div class="chart-bar animate" style="--h:75px;"></div>
+<div class="chart-bar animate" style="--h:80px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:92px;"></div>
+<div class="chart-bar animate" style="--h:96px;"></div>
+<div class="chart-bar animate" style="--h:88px;"></div>
+<div class="chart-bar animate" style="--h:70px;"></div>
+<div class="chart-bar animate" style="--h:78px;"></div>
+<div class="chart-bar animate" style="--h:85px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+<div class="chart-bar animate" style="--h:95px;"></div>
+<div class="chart-bar animate" style="--h:90px;"></div>
+<div class="chart-bar animate" style="--h:82px;"></div>
+<div class="chart-bar animate" style="--h:78px;"></div>
+<div class="chart-bar animate" style="--h:88px;background:linear-gradient(to top,#10b981,#34d399);"></div>
+</div>
+<div class="chart-labels"><span>يوم 1</span><span>يوم 5</span><span>يوم 10</span><span>يوم 15</span><span>يوم 20</span><span>يوم 25</span><span>يوم 30</span></div>
+</div>
+<div class="chart-box">
+<h4>تكلفة الرواتب -趋势</h4>
+<div class="chart" id="payroll-chart">
+<div class="chart-bar animate" style="--h:40px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+<div class="chart-bar animate" style="--h:45px;"></div>
+<div class="chart-bar animate" style="--h:52px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+<div class="chart-bar animate" style="--h:48px;"></div>
+<div class="chart-bar animate" style="--h:55px;"></div>
+<div class="chart-bar animate" style="--h:58px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+<div class="chart-bar animate" style="--h:62px;"></div>
+<div class="chart-bar animate" style="--h:50px;"></div>
+<div class="chart-bar animate" style="--h:56px;background:linear-gradient(to top,#8b5cf6,#a78bfa);"></div>
+<div class="chart-bar animate" style="--h:60px;"></div>
+</div>
+<div class="chart-labels"><span>10/2026</span><span>11/2026</span><span>12/2026</span><span>1/2027</span><span>2/2027</span><span>3/2027</span></div>
+</div>
+</div>
+<div class="grid-2">
+<div class="stat-card red" style="padding:20px;">
+<h4 style="font-size:11px;color:#64748b;margin-bottom:15px;text-transform:uppercase;letter-spacing:0.5px;">⚠️ مخاطر دوران الموظفين - Top 5</h4>
+<div style="display:flex;flex-direction:column;gap:12px;">
+<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">78%</div><div><div style="font-weight:600;font-size:13px;">محمد صلاح</div><div style="font-size:10px;color:#64748b;">المبيعات - 4 سنوات</div></div></div><div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:#ef4444;">78%</div><div style="font-size:10px;color:#64748b;">خاطر مرتفع</div></div></div>
+<div style="border-left:2px solid rgba(255,255,255,0.08);"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">65%</div><div><div style="font-weight:600;font-size:13px;">之外</div><div style="font-size:10px;color:#64748b;">التسويق - 2 سنوات</div></div></div><div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:#ef4444;">65%</div><div style="font-size:10px;color:#64748b;">خاطر مرتفع</div></div></div>
+<div style="border-left:2px solid rgba(255,255,255,0.08);"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,0.15);color:#f59e0b;display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">42%</div><div><div style="font-weight:600;font-size:13px;">خالد عبد الله</div><div style="font-size:10px;color:#64748b;">الدعم الفني - 3 سنوات</div></div></div><div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:#f59e0b;">42%</div><div style="font-size:10px;color:#64748b;">خاطر متوسط</div></div></div>
+<div style="border-left:2px solid rgba(255,255,255,0.08);"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,0.15);color:#f59e0b;display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">38%</div><div><div style="font-weight:600;font-size:13px;">سارة علي</div><div style="font-size:10px;color:#64748b;">التصميم - 4 سنوات</div></div></div><div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:#f59e0b;">38%</div><div style="font-size:10px;color:#64748b;">خاطر متوسط</div></div></div>
+<div style="border-left:2px solid rgba(255,255,255,0.08);"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:32px;height:32px;border-radius:50%;background:rgba(16,185,129,0.15);color:#10b981;display:flex;align-items:center;justify:center;font-size:12px;font-weight:700;">22%</div><div><div style="font-weight:600;font-size:13px;">أحمد محمد</div><div style="font-size:10px;color:#64748b;">تطوير البرمجيات - 3 سنوات</div></div></div><div style="text-align:right;"><div style="font-size:20px;font-weight:800;color:#10b981;">22%</div><div style="font-size:10px;color:#64748b;">خاطر منخفض</div></div></div>
+</div>
+<div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:15px;padding-top:10px;font-size:10px;color:#64748b;"><strong>عوامل الخطر:</strong> التأخر المتكرر، absence patterns, market salary gap, tenure</div>
+</div>
+</div>
+<div class="stat-card blue" style="padding:20px;">
+<h4 style="font-size:11px;color:#64748b;margin-bottom:15px;text-transform:uppercase;letter-spacing:0.5px;">📊 تنبؤات الرواتب - الأشهر الثلاثة القادمة</h4>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<div style="background:rgba(0,180,216,0.1);border:1px solid rgba(0,180,216,0.2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:11px;color:#94a3b8;">نوفمبر 2026</div><div style="font-size:13px;font-weight:700;color:#48cae4;">128,500 EGP</div><div style="font-size:9px;color:#64748b;">فعلي</div></div>
+<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:11px;color:#94a3b8;">ديسمبر 2026</div><div style="font-size:13px;font-weight:700;color:#f59e0b;">131,200 EGP</div><div style="font-size:9px;color:#64748b;">التنبؤ +2.1%</div></div>
+<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;"><div style="font-size:11px;color:#94a3b8;">يناير 2027</div><div style="font-size:13px;font-weight:700;color:#f59e0b;">133,800 EGP</div><div style="font-size:9px;color:#64748b;">التنبؤ +4.1%</div></div>
+</div>
+<div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:15px;padding-top:10px;font-size:10px;color:#64748b;"><strong>العوامل:</strong> new hires, salary adjustments, overtime trends</div>
+</div>
+</div>
+<div class="grid-2" style="margin-top:15px;">
+<div class="stat-card orange" style="padding:20px;">
+<h4 style="font-size:11px;color:#64748b;margin-bottom:15px;text-transform:uppercase;letter-spacing:0.5px;">📅 تنبؤات الحضور - الغد</h4>
+<div style="display:flex;flex-direction:column;gap:8px;">
+<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#94a3b8;">الحاضرون المتوقعون</span><span style="font-weight:700;color:#10b981;">132 موظف</span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#94a3b8;">المتأخرون المتوقعون</span><span style="font-weight:700;color:#f59e0b;">6 موظف</span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#94a3b8;">الغائبون المتوقعون</span><span style="font-weight:700;color:#ef4444;">9 موظف</span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#94a3b8;">معدل الحضور المتوقع</span><span style="font-weight:700;color:#48cae4;">93.2%</span></div>
+</div>
+<div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:15px;padding-top:10px;font-size:10px;color:#64748b;"><strong>العوامل:</strong> historical patterns, weather forecast, day of week</div>
+</div>
+</div>
+<div class="stat-card purple" style="padding:20px;">
+<h4 style="font-size:11px;color:#64748b;margin-bottom:15px;text-transform:uppercase;letter-spacing:0.5px;">📦 تنبؤات المخزن - إعادة الطلب</h4>
+<div style="display:flex;flex-direction:column;gap:6px;">
+<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.08);"><span style="color:#94a3b8;">طابعات HP Laser</span><div style="display:flex;gap:5px;align-items:center;"><div style="width:50px;height:6px;background:rgba(245,158,11,0.2);border-radius:3px;overflow:hidden;"><div style="width:72%;height:100%;background:#f59e0b;border-radius:3px;"></div></div><span style="font-size:10px;font-weight:600;color:#f59e0b;">8</span></div></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.08);"><span style="color:#94a3b8;">كراسات A4</span><div style="display:flex;gap:5px;align-items:center;"><div style="width:50px;height:6px;background:rgba(245,158,11,0.2);border-radius:3px;overflow:hidden;"><div style="width:40%;height:100%;background:#f59e0b;border-radius:3px;"></div></div><span style="font-size:10px;font-weight:600;color:#f59e0b;">120</span></div></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.08);"><span style="color:#94a3b8;">Sim Cards</span><div style="display:flex;gap:5px;align-items:center;"><div style="width:50px;height:6px;background:rgba(239,68,68,0.2);border-radius:3px;overflow:hidden;"><div style="width:100%;height:100%;background:#ef4444;border-radius:3px;"></div></div><span style="font-size:10px;font-weight:600;color:#f87171;">8</span></div></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 0;"><span style="color:#94a3b8;">USB Flash Drives</span><div style="display:flex;gap:5px;align-items:center;"><div style="width:50px;height:6px;background:rgba(16,185,129,0.2);border-radius:3px;overflow:hidden;"><div style="width:10%;height:100%;background:#10b981;border-radius:3px;"></div></div><span style="font-size:10px;font-weight:600;color:#10b981;">320</span></div></div>
+</div>
+<div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:15px;padding-top:10px;font-size:10px;color:#64748b;"><strong>توصيات إعادة الطلب:</strong> 3 منتجات تحتاج مراجعة</div>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "the-hr",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "dev": "uvicorn app.main:app --host 0.0.0.0 --port $PORT --reload",
+    "migrate": "alembic upgrade head",
+    "test": "pytest app/tests -v",
+    "lint": "ruff check app/",
+    "security": "bandit -r app/ -f json -o bandit.json"
+  },
+  "env": {
+    "DATABASE_URL": "postgresql+asyncpg://hr_user:hr_password@postgres:5432/thehr",
+    "REDIS_URL": "redis://redis:6379/0",
+    "SECRET_KEY": "change-me",
+    "OPENAI_API_KEY": "",
+    "GEMINI_API_KEY": "",
+    "SMTP_HOST": "smtp.gmail.com",
+    "SMTP_PORT": "587",
+    "FRONTEND_URL": "https://the-hr.puter.app"
+  }
+}

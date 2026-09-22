@@ -1,0 +1,65 @@
+name: CI
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install ruff
+      - name: Lint
+        run: ruff check backend/app/ --output-format=github
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: hr_user
+          POSTGRES_PASSWORD: hr_password
+          POSTGRES_DB: thehr
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install -r backend/requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest backend/app/tests -v --tb=short
+        env:
+          DATABASE_URL: postgresql+asyncpg://hr_user:hr_password@localhost:5432/thehr
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tools
+        run: pip install bandit pip-audit safety
+      - name: Bandit
+        run: bandit -r backend/app/ -f json -o bandit.json || true
+      - name: pip-audit
+        run: pip-audit --format=json || true
+      - name: Upload
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: bandit.json
