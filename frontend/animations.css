@@ -1,0 +1,173 @@
+/* ============================================
+   THE H.R — Advanced Animations & Effects
+   ============================================ */
+
+/* --- Entrance Animations --- */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideRight {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,180,216,0.4); }
+  50% { transform: scale(1.02); box-shadow: 0 0 20px 5px rgba(0,180,216,0.1); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes gradientRotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes counterUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ripple {
+  0% { box-shadow: 0 0 0 0 rgba(0,180,216,0.3); }
+  100% { box-shadow: 0 0 0 15px rgba(0,180,216,0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes glowPulse {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(0,180,216,0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(0,180,216,0.6)); }
+}
+@keyframes progressBar { from { width: 0; } to { width: var(--progress, 75%); } }
+@keyframes growUp { to { transform: scaleY(1); } }
+@keyframes drawLine { to { stroke-dashoffset: 0; } }
+@keyframes drawRing { to { stroke-dashoffset: var(--ring-offset, 78); } }
+
+/* --- Animated Card Effects --- */
+.animated-card {
+  animation: fadeSlideUp 0.6s ease-out forwards;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.animated-card:nth-child(1) { animation-delay: 0.1s; }
+.animated-card:nth-child(2) { animation-delay: 0.2s; }
+.animated-card:nth-child(3) { animation-delay: 0.3s; }
+.animated-card:nth-child(4) { animation-delay: 0.4s; }
+.animated-card:nth-child(5) { animation-delay: 0.5s; }
+.animated-card:nth-child(6) { animation-delay: 0.6s; }
+.animated-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 40px rgba(0, 180, 216, 0.15);
+  border-color: rgba(0, 180, 216, 0.3);
+}
+
+/* --- Animated Counters --- */
+.counter-animated {
+  animation: counterUp 0.8s ease-out forwards;
+  animation-delay: var(--delay, 0.3s);
+  opacity: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Sidebar Animation --- */
+.sidebar { animation: fadeSlideRight 0.5s ease-out; }
+.main-content { animation: fadeIn 0.8s ease-out; }
+
+/* --- Glassmorphism --- */
+.glass-card {
+  background: rgba(13, 33, 55, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+/* --- Progress Bars --- */
+.progress-animated {
+  height: 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.1); overflow: hidden;
+}
+.progress-animated::after {
+  content: ''; display: block; height: 100%; border-radius: 3px;
+
+
+/* --- AI Chat Widget --- */
+.ai-chat-widget { position: fixed; bottom: 30px; left: 30px; z-index: 9999; }
+.ai-chat-trigger {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; animation: pulse 2s infinite;
+  border: none; color: white; font-size: 24px; transition: transform 0.3s;
+}
+.ai-chat-trigger:hover { transform: scale(1.1); }
+.ai-chat-panel {
+  position: absolute; bottom: 70px; left: 0;
+  width: 380px; height: 500px;
+  background: var(--bg-secondary, #0a1929);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+  display: none; flex-direction: column; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.ai-chat-panel.active { display: flex; animation: scaleIn 0.3s ease-out; }
+.ai-chat-header {
+  padding: 16px; background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white; font-weight: 600; font-size: 14px;
+}
+.ai-chat-messages {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ai-msg { max-width: 85%; padding: 12px 16px; border-radius: 12px;
+  animation: fadeSlideUp 0.3s ease-out; font-size: 14px; line-height: 1.5; }
+.ai-msg.bot { background: #0d2137; align-self: flex-start; border-bottom-right-radius: 4px; }
+.ai-msg.user { background: #0077b6; align-self: flex-end; border-bottom-left-radius: 4px; }
+.ai-chat-input { display: flex; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); gap: 8px; }
+.ai-chat-input input {
+  flex: 1; padding: 10px 14px; background: #0d2137;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: white; outline: none;
+}
+.ai-chat-input input:focus { border-color: #00b4d8; }
+.ai-chat-input button {
+  padding: 10px 18px; background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;
+}
+
+/* --- Status Indicators --- */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot.online { background: #10b981; animation: ripple 2s infinite; }
+.status-dot.warning { background: #f59e0b; animation: pulse 1.5s infinite; }
+.status-dot.critical { background: #ef4444; animation: pulse 0.8s infinite; }
+
+/* --- Skeleton Loading --- */
+.skeleton {
+  background: linear-gradient(90deg, #0d2137 25%, #13294a 50%, #0d2137 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px;
+}
+
+/* --- Page Transition --- */
+.page-enter { animation: fadeSlideUp 0.5s ease-out forwards; }
+
+/* --- Gradient Background --- */
+.gradient-animated {
+  background: linear-gradient(-45deg, #07111f, #0a1929, #13294a, #0d2137);
+  background-size: 400% 400%; animation: gradientRotate 15s ease infinite;
+}
+
+/* --- Chart Animations --- */
+.chart-bar { transform-origin: bottom; animation: growUp 1s ease-out forwards; transform: scaleY(0); }
+.chart-bar:nth-child(2) { animation-delay: 0.1s; }
+.chart-bar:nth-child(3) { animation-delay: 0.2s; }
+.chart-bar:nth-child(4) { animation-delay: 0.3s; }
+.chart-bar:nth-child(5) { animation-delay: 0.4s; }
+
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  animation: progressBar 1.5s ease-out forwards; width: 0;
+}

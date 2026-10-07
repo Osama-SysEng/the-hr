@@ -4,10 +4,10 @@ AIsa Client — Connect The H.R to AIsa's APIs, Skills, and LLMs
 يستخدم لمكالمة نماذج AIsa، والـ APIs، والـ Skills.
 
 الإعداد:
-  export AISA_API_KEY="sk-aisa-vWop7o-CR6xjGPqjc-yMWYa1-SrMs-qqJoz_fBp75Cw"
+  export AISA_API_KEY="sk-aisa-CHANGE-ME"
 
 أو ضع المفتاح في ملف .env:
-  AISA_API_KEY=sk-aisa-vWop7o-CR6xjGPqjc-yMWYa1-SrMs-qqJoz_fBp75Cw
+  AISA_API_KEY=sk-aisa-CHANGE-ME
 """
 
 from typing import Any, Dict, List, Optional
@@ -23,7 +23,7 @@ import json
 AISA_BASE_URL = os.getenv("AISA_BASE_URL", "https://api.aisa.one/v1")
 AISA_API_KEY = os.getenv(
     "AISA_API_KEY",
-    "sk-aisa-vWop7o-CR6xjGPqjc-yMWYa1-SrMs-qqJoz_fBp75Cw"
+    ""
 )
 AISA_APIS_BASE_URL = os.getenv("AISA_APIS_BASE_URL", "https://api.aisa.one/apis/v1")
 

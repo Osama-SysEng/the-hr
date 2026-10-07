@@ -114,7 +114,7 @@ def upgrade():
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('code', sa.String(50), nullable=False),
         sa.Column('description', sa.Text, nullable=True),
-        sa.Column('manager_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('employees.id', ondelete='SET NULL'), nullable=True),
+        sa.Column('manager_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('parent_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('departments.id', ondelete='SET NULL'), nullable=True),
         sa.Column('sort_order', sa.Integer, default=0),
         sa.Column('is_active', sa.Boolean, default=True),
@@ -170,6 +170,8 @@ def upgrade():
     )
     op.create_index('ix_employees_tenant_status', 'employees', ['tenant_id', 'status'])
     op.create_index('ix_employees_department', 'employees', ['department_id'])
+    # Departments.manager_id FK added after employees exists (circular dependency fix)
+    op.create_foreign_key('fk_departments_manager_id', 'departments', 'employees', ['manager_id'], ['id'], ondelete='SET NULL')
 
     # =========================================================================
     # Attendance Records
@@ -329,7 +331,7 @@ def upgrade():
         sa.Column('job_posting_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('job_postings.id', ondelete='SET NULL'), nullable=True, index=True),
         sa.Column('first_name', sa.String(100), nullable=False),
         sa.Column('last_name', sa.String(100), nullable=False),
-        sa.Column('email', sa.String(255), nullable=False, index=True),
+        sa.Column('email', sa.String(255), nullable=False),
         sa.Column('phone', sa.String(50), nullable=True),
         sa.Column('country', sa.String(100), nullable=True),
         sa.Column('city', sa.String(100), nullable=True),

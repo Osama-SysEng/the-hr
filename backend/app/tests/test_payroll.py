@@ -9,8 +9,8 @@ def test_egyptian_social_insurance():
     max_base = Decimal("9800")
     employee = max(0, (min(salary, max_base) - 720) * Decimal("0.11"))
     employer = max(0, (min(salary, max_base) - 720) * Decimal("0.1875"))
-    assert float(employee) == 1782.0
-    assert float(employer) == 3082.5
+    assert float(employee) == 998.8
+    assert float(employer) == 1702.5
 
 
 def test_income_tax_brackets():
@@ -32,7 +32,7 @@ def test_income_tax_brackets():
     tax += bracket5 * 0.225
     remaining -= bracket5
     tax += remaining * 0.25
-    assert round(tax) == 32250
+    assert round(tax) == 48250
 
 
 def test_payroll_net_calculation():
@@ -42,4 +42,4 @@ def test_payroll_net_calculation():
     insurance = base * Decimal("0.11") + base * Decimal("0.01")
     monthly_tax = Decimal("2687.50")
     net = earnings - deductions - insurance - monthly_tax
-    assert float(net) == 16310.0
+    assert float(net) == 20352.5

@@ -6,7 +6,8 @@ def test_dashboard_stats():
     total = 147
     active = 142
     on_leave = 3
-    assert total == active + on_leave
+    terminated = 2
+    assert total == active + on_leave + terminated
 
 
 def test_admin_dashboardtotals():

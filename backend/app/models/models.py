@@ -480,7 +480,6 @@ class Candidate(Base, AsyncAttrs):
     stage_history: Mapped[Optional[List[dict]]] = mapped_column(JSON)
 
     # Scoring
-    cv_score_val: Mapped[Optional[float]] = mapped_column(Float, name="cv_score")
     interview_score: Mapped[Optional[float]] = mapped_column(Float)
     assessment_score: Mapped[Optional[float]] = mapped_column(Float)
     overall_score: Mapped[Optional[float]] = mapped_column(Float)

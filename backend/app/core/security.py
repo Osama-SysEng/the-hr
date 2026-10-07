@@ -6,32 +6,30 @@ JWT Authentication + RBAC + Password Hashing
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.config import settings
+from app.core.database import get_db
+from app.models.models import User
 
 
 # -----------------------------------------------------------------------------
-# Password Hashing
+# Password Hashing (bcrypt direct - compatible with bcrypt 5.x, scalable)
 # -----------------------------------------------------------------------------
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12,
-)
-
-
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        return False
 
 
 # -----------------------------------------------------------------------------
@@ -121,7 +119,7 @@ ROLE_PERMISSIONS = {
         "employees:read",  # own data
         "attendance:read",  # own data
         "payroll:read",  # own data
-        "payroll:write",  # own leave requests
+        "leave:write",  # own leave requests
     },
     "accountant": {
         "payroll:read", "payroll:write",
@@ -130,7 +128,7 @@ ROLE_PERMISSIONS = {
 }
 
 
-def get_current_user(
+async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
     db: AsyncSession = Depends(get_db),
 ) -> dict:

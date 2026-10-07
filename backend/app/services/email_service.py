@@ -314,7 +314,7 @@ class EmailService:
 
         for recipient in recipients:
             email = recipient["email"]
-            name = recipient.get("name", "")]
+            name = recipient.get("name", "")
             variables = recipient.get("variables", {})
 
             # Replace variables in template

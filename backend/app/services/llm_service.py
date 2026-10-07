@@ -70,7 +70,8 @@ For each skill, provide a direct quote from the CV as evidence.
 Mark ambiguity for human review.
 Return ONLY valid JSON matching the schema."""
 
-        user_prompt = f"""Job criteria:\n{criteria_text}\n\nCV text:\n{cv_text}"""
+        
+        prompt = f"""Job criteria:\n{criteria_text}\n\nCV text:\n{cv_text}"""
 
         if self.use_openai and self.openai_client:
             try:

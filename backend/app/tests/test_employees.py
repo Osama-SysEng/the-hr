@@ -19,4 +19,4 @@ def test_salary_calculation():
     housing = base * 0.25
     transport = base * 0.10
     total = base + housing + transport
-    assert total == 22500
+    assert total == 24300

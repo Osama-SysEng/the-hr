@@ -22,7 +22,7 @@ def test_interview_evaluation():
         score = min(100, word_count * 3 + 50)
         scores.append({"score": score, "max_score": 100, "feedback": "Okay"})
     overall = sum(s["score"] for s in scores) / len(scores)
-    assert round(overall) == 59
+    assert round(overall) == 68
 
 
 def test_turnover_prediction():

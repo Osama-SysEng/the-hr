@@ -21,7 +21,7 @@ def test_all_tables_have_tenant_id():
         "attendance_records", "leave_requests", "employee_loans",
         "payrolls", "job_postings", "candidates", "ai_interviews",
         "inventory_products", "stock_movements", "suppliers",
-        "purchase_orders", "analytics_kpis", "predictions",
+        "purchase_orders", "purchase_order_items", "analytics_kpis", "predictions",
         "audit_logs", "performance_reviews",
     ]
     assert len(tenant_tables) == 20

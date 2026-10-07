@@ -3,7 +3,7 @@ The H.R - Configuration Settings
 منصة إدارة الموارد البشرية المتكاملة
 """
 
-from functools import lrufunc
+from functools import lru_cache
 from pydantic_settings import BaseSettings
 
 
@@ -55,13 +55,12 @@ class Settings(BaseSettings):
     # Multi-tenant
     DEFAULT_TENANT_ID: str = "default"
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
 
 
 settings = Settings()
 
 
+@lru_cache
 def get_settings() -> Settings:
     return settings

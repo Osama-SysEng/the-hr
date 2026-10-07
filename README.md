@@ -494,7 +494,7 @@ AIsa is configured via environment variables (see `.env.example`):
 
 ```ini
 # AIsa API Key (مناح في account.aisa.one)
-AISA_API_KEY=sk-aisa-vWop7o-CR6xjGPqjc-yMWYa1-SrMs-qqJoz_fBp75Cw
+AISA_API_KEY=sk-aisa-CHANGE-ME
 
 # النهايات الأساسية
 AISA_BASE_URL=https://api.aisa.one/v1

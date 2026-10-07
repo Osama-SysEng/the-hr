@@ -22,7 +22,7 @@ def test_purchase_order_total():
     ]
     total = sum(i["qty"] * i["price"] for i in items)
     assert total == 25000
-    tax = total * 0.14
+    tax = round(total * 0.14, 2)
     assert tax == 3500
     grand = total + tax
     assert grand == 28500
