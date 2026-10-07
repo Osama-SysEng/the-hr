@@ -9,7 +9,11 @@ import hashlib
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, asdict
 from openai import OpenAI
-import google.generativeai as genai
+
+try:
+    import google.generativeai as genai
+except ImportError:  # Optional dependency — Gemini disabled without it
+    genai = None
 
 
 @dataclass
@@ -43,7 +47,7 @@ class LLMService:
         if self.use_openai:
             self.openai_client = OpenAI(api_key=self.use_openai)
 
-        if self.use_gemini:
+        if self.use_gemini and genai is not None:
             genai.configure(api_key=self.use_gemini)
             self.gemini_client = genai.GenerativeModel('gemini-1.5-pro')
 

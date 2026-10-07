@@ -8,10 +8,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import Tenant, Employee, User
+from app.models.models import Tenant, Employee, User, Department
 
 
 router = APIRouter(prefix="/settings", tags=["Company Settings"])

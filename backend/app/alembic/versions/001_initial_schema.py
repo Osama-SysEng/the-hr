@@ -16,6 +16,9 @@ depends_on = None
 
 
 def upgrade():
+    # Required for gen_random_uuid() defaults on a brand-new database
+    op.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+
     # =========================================================================
     # Enums (PostgreSQL ENUM types)
     # =========================================================================
@@ -577,3 +580,44 @@ def upgrade():
     )
     op.create_index('ix_reviews_tenant_employee', 'performance_reviews', ['tenant_id', 'employee_id'])
     op.create_index('ix_reviews_period', 'performance_reviews', ['review_period'])
+
+
+def downgrade():
+    # Drop tables in reverse dependency order
+    op.drop_table('performance_reviews')
+    op.drop_table('audit_logs')
+    op.drop_table('predictions')
+    op.drop_table('analytics_kpis')
+    op.drop_table('purchase_order_items')
+    op.drop_table('purchase_orders')
+    op.drop_table('suppliers')
+    op.drop_table('stock_movements')
+    op.drop_table('inventory_products')
+    op.drop_table('ai_interviews')
+    op.drop_table('candidates')
+    op.drop_table('job_postings')
+    op.drop_table('payrolls')
+    op.drop_table('employee_loans')
+    op.drop_table('leave_requests')
+    op.drop_table('attendance_records')
+    # Drop FK first (added after employees for the circular dependency),
+    # then the two mutually-dependent tables.
+    op.drop_constraint('fk_departments_manager_id', 'departments', type_='foreignkey')
+    op.drop_table('employees')
+    op.drop_table('departments')
+    op.drop_table('users')
+    op.drop_table('tenants')
+
+    # Drop custom ENUM types
+    for enum_name in (
+        'user_role_enum',
+        'employee_status_enum',
+        'attendance_status_enum',
+        'leave_type_enum',
+        'leave_status_enum',
+        'payroll_status_enum',
+        'recruitment_stage_enum',
+        'gender_enum',
+        'employment_type_enum',
+    ):
+        op.execute(f'DROP TYPE IF EXISTS {enum_name}')

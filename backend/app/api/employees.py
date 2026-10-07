@@ -4,6 +4,7 @@ Full CRUD for employees with filtering and search
 """
 
 from typing import Optional, List
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +25,7 @@ router = APIRouter(prefix="/employees", tags=["Employees"])
 # Schemas (inline for now - can move to schemas.py later)
 # -----------------------------------------------------------------------------
 from pydantic import BaseModel, Field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional as Opt
 
 
@@ -137,6 +138,20 @@ class EmployeeListResponse(BaseModel):
 # -----------------------------------------------------------------------------
 # Helper: Build employee response
 # -----------------------------------------------------------------------------
+def _short_id(value) -> str:
+    """First 6 hex chars of a UUID/UUID-string (safe for str and UUID objects)."""
+    return str(value).replace("-", "")[:6].upper()
+
+
+def _as_text(value):
+    """Biometric columns are Text (Base64 str) but may be bytes on some drivers."""
+    if value is None:
+        return None
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).hex()
+    return value
+
+
 def _build_employee_response(emp: Employee) -> EmployeeResponse:
     return EmployeeResponse(
         id=emp.id,
@@ -158,8 +173,8 @@ def _build_employee_response(emp: Employee) -> EmployeeResponse:
         emergency_phone=emp.emergency_phone,
         email=emp.email,
         social_insurance_number=emp.social_insurance_number,
-        fingerprint_template=emp.fingerprint_template.hex() if emp.fingerprint_template else None,
-        face_encoding=emp.face_encoding.hex() if emp.face_encoding else None,
+        fingerprint_template=_as_text(emp.fingerprint_template),
+        face_encoding=_as_text(emp.face_encoding),
         hire_date=emp.hire_date,
         probation_end=emp.probation_end,
         contract_start=emp.contract_start,
@@ -300,7 +315,7 @@ async def create_employee(
     )
     max_num = result.scalar()
     max_num_int = int(max_num.split("-")[-1]) if max_num and "-" in max_num else 0
-    employee_number = f"EMP-{tenant_id.hex[:6].upper()}-{str(max_num_int + 1).zfill(6).upper()}"
+    employee_number = f"EMP-{_short_id(tenant_id)}-{str(max_num_int + 1).zfill(6).upper()}"
 
     # Create employee
     employee = Employee(
@@ -416,7 +431,7 @@ async def delete_employee(
         )
 
     employee.status = "terminated"
-    employee.terminated_at = datetime.utcnow()
+    employee.terminated_at = datetime.now(timezone.utc)
     await db.commit()
 
 
@@ -434,7 +449,7 @@ async def bulk_import_employees(
     created = []
 
     for emp_data in employees_data:
-        employee_number = f"EMP-{tenant_id.hex[:6].upper()}-{uuid.uuid4().hex[:6].upper()}"
+        employee_number = f"EMP-{_short_id(tenant_id)}-{uuid.uuid4().hex[:6].upper()}"
         employee = Employee(
             id=uuid.uuid4().hex,
             tenant_id=tenant_id,

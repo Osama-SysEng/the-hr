@@ -4,8 +4,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev &
 WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/alembic.ini ./alembic.ini
 COPY backend/app ./app/
 RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 EXPOSE 8000
-HEALTHCHECK --interval=30s CMD python -c "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD python -c "import urllib.request;urllib.request.urlopen('http://localhost:8000/health', timeout=4)"
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

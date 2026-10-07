@@ -346,5 +346,7 @@ class EmailService:
         }
 
     def test_connection(self) -> bool:
-        """Test email server connection."""
-        return self.connect() and self.disconnect() or True
+        """Test email server connection. Returns True only if login succeeds."""
+        connected = self.connect()
+        self.disconnect()
+        return connected

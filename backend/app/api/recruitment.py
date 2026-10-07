@@ -8,7 +8,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func, text
+from sqlalchemy import select, and_, or_, func, text
 from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
@@ -18,6 +18,9 @@ from app.models.models import (
 import uuid
 import shutil
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/recruitment", tags=["Recruitment"])
@@ -467,13 +470,15 @@ async def create_candidate(
             import pdfplumber
             with pdfplumber.open(cv_path) as pdf:
                 cv_text = "\n".join([page.extract_text() or "" for page in pdf.pages])
-        except Exception:
+        except Exception as exc:
+            logger.debug("pdfplumber extraction failed for %s: %s", cv_filename, exc)
             try:
                 import mammoth
                 with open(cv_path, "rb") as f:
                     result = mammoth.extract_raw_text(f)
                     cv_text = result.value
-            except Exception:
+            except Exception as exc2:
+                logger.debug("mammoth extraction failed for %s: %s", cv_filename, exc2)
                 cv_text = ""
 
     candidate = Candidate(
@@ -655,14 +660,18 @@ async def screen_candidate(
 
     avg_score = round(total_score, 1)
 
-    # LLM extraction (if available)
+    # LLM extraction (if available — uses OPENAI_API_KEY or GEMINI_API_KEY)
     llm_extraction = None
-    if candidate.cv_text and os.environ.get("OPENAI_API_KEY"):
+    if candidate.cv_text and (os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")):
         try:
-            from app.services.llm_service import extract_cv_facts
-            llm_extraction = await extract_cv_facts(candidate.cv_text, [c["title"] for c in criteria])
-        except Exception:
-            pass
+            from dataclasses import asdict
+            from app.services.llm_service import llm_service
+            extraction = llm_service.extract_cv_facts(
+                candidate.cv_text, [c["title"] for c in criteria]
+            )
+            llm_extraction = asdict(extraction) if extraction is not None else None
+        except Exception as exc:
+            logger.warning("CV LLM extraction failed, continuing with keyword score: %s", exc)
 
     # Update candidate with scores
     candidate.cv_score = avg_score
@@ -816,7 +825,9 @@ async def complete_interview(
     result = await db.execute(
         select(AIInterview).where(
             and_(AIInterview.id == interview_id, AIInterview.tenant_id == tenant_id)
-        ).options(selectinload(AIInterview.candidate))
+        ).options(
+            selectinload(AIInterview.candidate).selectinload(Candidate.job_posting)
+        )
     )
     interview = result.scalar_one_or_none()
 
@@ -830,8 +841,19 @@ async def complete_interview(
     interview.status = "completed"
     interview.completed_at = datetime.now(timezone.utc)
 
-    # Evaluate answers (in production: use AI model)
-    evaluation = evaluate_interview_answers(interview.questions, answers)
+    # Evaluate answers: use AI when keys are configured, else deterministic heuristic
+    evaluation = None
+    if os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY"):
+        try:
+            from app.services.llm_service import llm_service
+            job = interview.candidate.job_posting if interview.candidate else None
+            evaluation = llm_service.evaluate_interview_answers(
+                interview.questions or [], answers, job_title=job.title if job else ""
+            )
+        except Exception as exc:
+            logger.warning("AI interview evaluation failed, using heuristic: %s", exc)
+    if evaluation is None:
+        evaluation = evaluate_interview_answers(interview.questions, answers)
     interview.evaluation = evaluation
     interview.score = evaluation.get("overall_score", 0)
 
@@ -913,7 +935,12 @@ def generate_interview_questions(job: Optional[JobPosting], candidate: Candidate
 
 
 def evaluate_interview_answers(questions: List[dict], answers: List[dict]) -> dict:
-    """Evaluate interview answers (placeholder for AI evaluation)."""
+    """Deterministic heuristic evaluation used when no AI key is configured.
+
+    When OPENAI_API_KEY or GEMINI_API_KEY is set, callers prefer
+    ``LLMService.evaluate_interview_answers`` (AI scoring with this same
+    heuristic as automatic fallback).
+    """
     scores = []
     details = []
 

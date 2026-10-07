@@ -457,7 +457,7 @@ class Candidate(Base, AsyncAttrs):
     job_posting_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=True), ForeignKey("job_postings.id", ondelete="SET NULL"), index=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
     phone: Mapped[Optional[str]] = mapped_column(String(50))
     country: Mapped[Optional[str]] = mapped_column(String(100))
     city: Mapped[Optional[str]] = mapped_column(String(100))

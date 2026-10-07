@@ -3,7 +3,8 @@ The H.R - Auth API Router
 Login, Register, Token Refresh, Profile
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,7 +66,7 @@ async def login(
         )
 
     # Update login info
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
     user.failed_attempts = 0
     await db.commit()
 
@@ -136,7 +137,7 @@ async def register(
 
     employee = None
     if request.role == "employee" and (request.first_name or request.last_name):
-        employee_number = f"EMP-{tenant.id.hex[:6].upper()}-{new_user.id.hex[:6].upper()}"
+        employee_number = f"EMP-{str(tenant.id).replace('-', '')[:6].upper()}-{str(new_user.id).replace('-', '')[:6].upper()}"
         employee = Employee(
             id=new_user.id,
             tenant_id=tenant.id,

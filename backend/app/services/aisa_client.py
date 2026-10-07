@@ -14,6 +14,9 @@ from typing import Any, Dict, List, Optional
 import os
 import httpx
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -132,8 +135,9 @@ class AIsaClient:
                     raise RuntimeError(
                         f"تخطى الحد الأقصى للتكلفة (${MAX_COST_USD})"
                     )
-            except (ValueError, TypeError):
-                pass
+            except (ValueError, TypeError) as exc:
+                # Malformed pricing header — ignore it but keep a trace.
+                logger.debug("Ignoring invalid x-aisa-pricing header %r: %s", cost_header, exc)
 
         response.raise_for_status()
         return response.json()

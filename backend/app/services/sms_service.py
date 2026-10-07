@@ -4,7 +4,11 @@ The H.R - SMS Service using Twilio
 
 import os
 from typing import Optional, List, Dict, Any
-from twilio.rest import Client
+
+try:
+    from twilio.rest import Client
+except ImportError:  # Optional dependency — SMS sending disabled without it
+    Client = None
 
 
 class SMSService:
@@ -13,7 +17,7 @@ class SMSService:
         self.auth_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
         self.phone_number = os.environ.get("TWILIO_PHONE_NUMBER", "")
         self.client = None
-        if self.account_sid and self.auth_token:
+        if self.account_sid and self.auth_token and Client is not None:
             self.client = Client(self.account_sid, self.auth_token)
 
     def send_sms(self, to: str, body: str) -> Optional[str]:

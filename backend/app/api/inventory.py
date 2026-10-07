@@ -8,7 +8,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
@@ -553,7 +553,7 @@ async def create_purchase_order(
     tenant_id = current_user["tenant_id"]
 
     # Generate PO number
-    po_number = f"PO-{tenant_id.hex[:6]}-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+    po_number = f"PO-{str(tenant_id).replace('-', '')[:6]}-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
 
     # Calculate totals
     total_amount = Decimal("0")

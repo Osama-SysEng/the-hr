@@ -3,7 +3,7 @@ The H.R - Leave & Loans API Router
 Leave management, employee loans/advance
 """
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, Query

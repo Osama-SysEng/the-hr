@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, text
+from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
 from app.models.models import (
@@ -246,7 +247,7 @@ async def calculate_payroll(
         .where(Employee.id == request.employee_id)
         .where(Employee.tenant_id == tenant_id)
         .options(
-            select.inload(Employee.department),
+            selectinload(Employee.department),
         )
     )
     employee = emp_result.scalar_one_or_none()
@@ -445,8 +446,8 @@ async def get_payroll(
     query = select(Payroll).where(
         and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)
     ).options(
-        select.inload(Payroll.employee),
-        select.inload(Payroll.employee).selectinload(Employee.department),
+        selectinload(Payroll.employee),
+        selectinload(Payroll.employee).selectinload(Employee.department),
     )
 
     # Non-admins can only see their own payroll
@@ -512,8 +513,8 @@ async def list_payrolls(
 
     result = await db.execute(
         query.options(
-            select.inload(Payroll.employee),
-            select.inload(Payroll.employee).selectinload(Employee.department),
+            selectinload(Payroll.employee),
+            selectinload(Payroll.employee).selectinload(Employee.department),
         )
     )
     payrolls = result.scalars().all()
@@ -737,6 +738,7 @@ async def calculate_all_payrolls(
     employees = emp_result.scalars().all()
 
     created = []
+    failed = []
     for employee in employees:
         try:
             # Check if already exists
@@ -780,7 +782,8 @@ async def calculate_all_payrolls(
             db.add(payroll)
             created.append(payroll)
 
-        except Exception:
+        except Exception as exc:
+            failed.append({"employee_id": str(employee.id), "error": str(exc)})
             continue
 
     await db.commit()
@@ -788,6 +791,7 @@ async def calculate_all_payrolls(
     return {
         "message": f"تم حساب رواتب {len(created)} موظف",
         "created": len(created),
+        "failed": failed,
     }
 
 

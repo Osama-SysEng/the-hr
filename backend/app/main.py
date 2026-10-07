@@ -4,6 +4,7 @@ Entry point for The H.R Backend API
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -325,8 +326,14 @@ async def health_check():
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
-    
-    openapi_schema = app.openapi()
+
+    from fastapi.openapi.utils import get_openapi
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
     
     # Add Arabic summary
     openapi_schema["info"]["x-summary-ar"] = "منصة إدارة الموارد البشرية المتكاملة"
