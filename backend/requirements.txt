@@ -19,7 +19,7 @@ itsdangerous==2.2.0
 # Background tasks
 celery==5.4.0
 redis==5.1.1
-flower==2.0.3
+flower==2.2.0
 
 # AI / LLM
 openai==2.6.0
