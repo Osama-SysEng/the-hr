@@ -1,5 +1,4 @@
 """اختبارات التحليلات والتنبؤات"""
-import pytest
 
 
 def test_turnover_risk():

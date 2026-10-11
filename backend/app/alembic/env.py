@@ -6,12 +6,12 @@ The H.R - HR Operating System
 
 import asyncio
 from logging.config import fileConfig
+
+from alembic import context
+from app.core.config import settings
+from app.core.database import Base
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
-from alembic import context
-
-from app.core.database import Base
-from app.core.config import settings
 
 # this is the Alembic Config object
 config = context.config
@@ -55,6 +55,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode with async support."""
+
     async def run_async_migrations():
         """In this scenario, we need to create an async engine and associate it with the context."""
         connectable = create_async_engine(

@@ -3,12 +3,15 @@ The H.R - LLM Service
 AI-powered CV extraction, interview evaluation, and predictions
 """
 
-import os
 import json
-import hashlib
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, asdict
+import logging
+import os
+from dataclasses import dataclass
+from typing import Any
+
 from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 try:
     import google.generativeai as genai
@@ -25,11 +28,11 @@ class SkillEvidence:
 
 @dataclass
 class ResumeExtraction:
-    skills: List[SkillEvidence]
-    experience_signals: List[str]
-    education_signals: List[str]
-    unanswered_job_criteria: List[str]
-    review_warnings: List[str]
+    skills: list[SkillEvidence]
+    experience_signals: list[str]
+    education_signals: list[str]
+    unanswered_job_criteria: list[str]
+    review_warnings: list[str]
 
 
 class LLMService:
@@ -39,7 +42,7 @@ class LLMService:
     """
 
     def __init__(self):
-        self.openai_client: Optional[OpenAI] = None
+        self.openai_client: OpenAI | None = None
         self.gemini_client = None
         self.use_openai = os.environ.get("OPENAI_API_KEY")
         self.use_gemini = os.environ.get("GEMINI_API_KEY")
@@ -49,14 +52,14 @@ class LLMService:
 
         if self.use_gemini and genai is not None:
             genai.configure(api_key=self.use_gemini)
-            self.gemini_client = genai.GenerativeModel('gemini-1.5-pro')
+            self.gemini_client = genai.GenerativeModel("gemini-1.5-pro")
 
     def extract_cv_facts(
         self,
         cv_text: str,
-        job_criteria: List[str],
+        job_criteria: list[str],
         model: str = "gpt-4o-mini",
-    ) -> Optional[ResumeExtraction]:
+    ) -> ResumeExtraction | None:
         """
         Extract job-relevant facts from CV text using LLM.
         Returns structured extraction with skills, experience, education signals.
@@ -74,7 +77,6 @@ For each skill, provide a direct quote from the CV as evidence.
 Mark ambiguity for human review.
 Return ONLY valid JSON matching the schema."""
 
-        
         prompt = f"""Job criteria:\n{criteria_text}\n\nCV text:\n{cv_text}"""
 
         if self.use_openai and self.openai_client:
@@ -83,7 +85,7 @@ Return ONLY valid JSON matching the schema."""
                     model=model,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
+                        {"role": "user", "content": prompt},
                     ],
                     response_format={
                         "type": "json_schema",
@@ -112,8 +114,11 @@ Return ONLY valid JSON matching the schema."""
                                     "review_warnings": {"type": "array", "items": {"type": "string"}},
                                 },
                                 "required": [
-                                    "skills", "experience_signals", "education_signals",
-                                    "unanswered_job_criteria", "review_warnings",
+                                    "skills",
+                                    "experience_signals",
+                                    "education_signals",
+                                    "unanswered_job_criteria",
+                                    "review_warnings",
                                 ],
                                 "additionalProperties": False,
                             },
@@ -139,14 +144,15 @@ Return ONLY valid JSON matching the schema."""
                     review_warnings=result.get("review_warnings", []),
                 )
             except Exception as e:
+                logger.exception("OpenAI extraction failed")
                 print(f"OpenAI extraction failed: {e}")
                 return None
 
         elif self.use_gemini and self.gemini_client:
             try:
-                prompt = f"{system_prompt}\n\n{user_prompt}"
+                full_prompt = f"{system_prompt}\n\n{prompt}"
                 response = self.gemini_client.generate_content(
-                    prompt,
+                    full_prompt,
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.3,
                         max_output_tokens=2000,
@@ -168,6 +174,7 @@ Return ONLY valid JSON matching the schema."""
                     review_warnings=result.get("review_warnings", []),
                 )
             except Exception as e:
+                logger.exception("Gemini extraction failed")
                 print(f"Gemini extraction failed: {e}")
                 return None
 
@@ -175,10 +182,10 @@ Return ONLY valid JSON matching the schema."""
 
     def evaluate_interview_answers(
         self,
-        questions: List[Dict[str, Any]],
-        answers: List[Dict[str, Any]],
+        questions: list[dict[str, Any]],
+        answers: list[dict[str, Any]],
         job_title: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate interview answers using AI.
         Returns overall score and per-question breakdown.
@@ -188,7 +195,7 @@ Return ONLY valid JSON matching the schema."""
             return self._heuristic_evaluation(questions, answers)
 
         combined = []
-        for q, a in zip(questions, answers):
+        for q, a in zip(questions, answers, strict=False):
             combined.append(f"Q: {q.get('question', '')}\nA: {a.get('answer', '')}")
 
         prompt = f"""Evaluate these interview answers for the position of: {job_title}
@@ -224,7 +231,10 @@ Answers:
                 response = self.openai_client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": "You are an expert HR interviewer. Provide fair, objective evaluations."},
+                        {
+                            "role": "system",
+                            "content": "You are an expert HR interviewer. Provide fair, objective evaluations.",
+                        },
                         {"role": "user", "content": prompt},
                     ],
                     response_format={"type": "json_schema"},
@@ -233,6 +243,7 @@ Answers:
                 )
                 return json.loads(response.choices[0].message.content)
             except Exception:
+                logger.exception("OpenAI interview evaluation failed")
                 return self._heuristic_evaluation(questions, answers)
 
         elif self.use_gemini and self.gemini_client:
@@ -240,27 +251,30 @@ Answers:
                 response = self.gemini_client.generate_content(prompt)
                 return json.loads(response.text)
             except Exception:
+                logger.exception("Gemini interview evaluation failed")
                 return self._heuristic_evaluation(questions, answers)
 
         return self._heuristic_evaluation(questions, answers)
 
     def _heuristic_evaluation(
         self,
-        questions: List[Dict[str, Any]],
-        answers: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        questions: list[dict[str, Any]],
+        answers: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Simple heuristic evaluation when AI is not available."""
         scores = []
-        for q, a in zip(questions, answers):
+        for q, a in zip(questions, answers, strict=False):
             answer_text = a.get("answer", "")
             word_count = len(answer_text.split())
             score = min(100, word_count * 3 + (50 if word_count > 20 else 0))
-            scores.append({
-                "question_id": q.get("id", ""),
-                "score": score,
-                "max_score": 100,
-                "feedback": "Answer provided" if word_count > 0 else "No answer",
-            })
+            scores.append(
+                {
+                    "question_id": q.get("id", ""),
+                    "score": score,
+                    "max_score": 100,
+                    "feedback": "Answer provided" if word_count > 0 else "No answer",
+                }
+            )
 
         overall = round(sum(s["score"] for s in scores) / len(scores)) if scores else 0
 
@@ -276,109 +290,114 @@ Answers:
         self,
         job_title: str,
         job_description: str,
-        required_skills: List[str],
+        required_skills: list[str],
         experience_level: str = "mid",
         num_questions: int = 8,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Generate role-specific interview questions.
         """
-        question_types = [
-            "introduction",
-            "experience",
-            "technical",
-            "problem_solving",
-            "behavioral",
-            "cultural_fit",
-        ]
-
         questions = []
         question_id = 0
 
         # Introduction
-        questions.append({
-            "id": f"q-{question_id}",
-            "question": "مرحباً بك! رحب بك؟ تخبرني عن نفسك وبخبرتك العمل في هذا المجال؟",
-            "type": "text",
-            "max_time_minutes": 3,
-            "role": "introduction",
-            "weight": 10,
-        })
+        questions.append(
+            {
+                "id": f"q-{question_id}",
+                "question": "مرحباً بك! رحب بك؟ تخبرني عن نفسك وبخبرتك العمل في هذا المجال؟",
+                "type": "text",
+                "max_time_minutes": 3,
+                "role": "introduction",
+                "weight": 10,
+            }
+        )
         question_id += 1
 
         # Experience
-        questions.append({
-            "id": f"q-{question_id}",
-            "question": "ما هي أبرز الإنجازات في مسيرتك المهنية؟ شارك معي مثالًا محددًا؟",
-            "type": "text",
-            "max_time_minutes": 3,
-            "role": "experience",
-            "weight": 15,
-        })
+        questions.append(
+            {
+                "id": f"q-{question_id}",
+                "question": "ما هي أبرز الإنجازات في مسيرتك المهنية؟ شارك معي مثالًا محددًا؟",
+                "type": "text",
+                "max_time_minutes": 3,
+                "role": "experience",
+                "weight": 15,
+            }
+        )
         question_id += 1
 
         # Technical questions
         for skill in required_skills[:3]:
-            questions.append({
-                "id": f"q-{question_id}",
-                "question": f"أخبرني عن خبرتك العملية في {skill}؟ ما هي أهم المشاريع التي استخدمت فيها هذه المهارة؟",
-                "type": "text",
-                "max_time_minutes": 3,
-                "role": "technical",
-                "weight": 20,
-            })
+            questions.append(
+                {
+                    "id": f"q-{question_id}",
+                    "question": f"أخبرني عن خبرتك العملية في {skill}؟ ما هي أهم المشاريع التي استخدمت فيها هذه المهارة؟",
+                    "type": "text",
+                    "max_time_minutes": 3,
+                    "role": "technical",
+                    "weight": 20,
+                }
+            )
             question_id += 1
 
         # Problem solving
-        questions.append({
-            "id": f"q-{question_id}",
-            "question": "صف لي موقفًا واجهت فيه تحديًا تقنيًا كبيرًا وكيف تغلبت عليه؟",
-            "type": "text",
-            "max_time_minutes": 3,
-            "role": "problem_solving",
-            "weight": 20,
-        })
+        questions.append(
+            {
+                "id": f"q-{question_id}",
+                "question": "صف لي موقفًا واجهت فيه تحديًا تقنيًا كبيرًا وكيف تغلبت عليه؟",
+                "type": "text",
+                "max_time_minutes": 3,
+                "role": "problem_solving",
+                "weight": 20,
+            }
+        )
         question_id += 1
 
         # Behavioral
-        questions.append({
-            "id": f"q-{question_id}",
-            "question": " كيف تتعامل مع الضغط؟ شارك معي مثالًا عندما كنت تحت ضغط كبير؟",
-            "type": "text",
-            "max_time_minutes": 3,
-            "role": "behavioral",
-            "weight": 15,
-        })
+        questions.append(
+            {
+                "id": f"q-{question_id}",
+                "question": " كيف تتعامل مع الضغط؟ شارك معي مثالًا عندما كنت تحت ضغط كبير؟",
+                "type": "text",
+                "max_time_minutes": 3,
+                "role": "behavioral",
+                "weight": 15,
+            }
+        )
         question_id += 1
 
         # Cultural fit
-        questions.append({
-            "id": f"q-{question_id}",
-            "question": "لماذا ترغب في العمل في هذه الشركة وفي هذه الدور تحديدًا؟",
-            "type": "text",
-            "max_time_minutes": 2,
-            "role": "cultural_fit",
-            "weight": 10,
-        })
+        questions.append(
+            {
+                "id": f"q-{question_id}",
+                "question": "لماذا ترغب في العمل في هذه الشركة وفي هذه الدور تحديدًا؟",
+                "type": "text",
+                "max_time_minutes": 2,
+                "role": "cultural_fit",
+                "weight": 10,
+            }
+        )
         question_id += 1
 
         # Language
-        questions.append({
-            "id": f"q-{question_id}",
-            "question": "ما هي لغات البرمجة وال بيئات التطوير التي تفضلها ولماذا؟",
-            "type": "text",
-            "max_time_minutes": 2,
-            "role": "technical",
-            "weight": 10,
-        })
+        questions.append(
+            {
+                "id": f"q-{question_id}",
+                "question": "ما هي لغات البرمجة وال بيئات التطوير التي تفضلها ولماذا؟",
+                "type": "text",
+                "max_time_minutes": 2,
+                "role": "technical",
+                "weight": 10,
+            }
+        )
 
         return questions[:num_questions]
 
     def predict_turnover_risk(
         self,
-        employee_data: Dict[str, Any],
-        attendance_history: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        employee_data: dict[str, Any],
+        attendance_history: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Predict employee turnover risk based on attendance patterns and employee data.
         """
@@ -451,7 +470,7 @@ Answers:
         employee_count: int,
         growth_rate: float = 0.02,
         months_ahead: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Predict future payroll costs based on current trends.
         """
@@ -460,12 +479,16 @@ Answers:
 
         for month in range(1, months_ahead + 1):
             projected = current_cost * ((1 + growth_rate) ** month)
-            predictions.append({
-                "month": month,
-                "projected_cost": round(projected, 2),
-                "increase": round(projected - current_cost, 2),
-                "increase_percent": round(((projected - current_cost) / current_cost) * 100, 2) if current_cost > 0 else 0,
-            })
+            predictions.append(
+                {
+                    "month": month,
+                    "projected_cost": round(projected, 2),
+                    "increase": round(projected - current_cost, 2),
+                    "increase_percent": round(((projected - current_cost) / current_cost) * 100, 2)
+                    if current_cost > 0
+                    else 0,
+                }
+            )
 
         return {
             "current_month": current_month_cost,
@@ -478,19 +501,38 @@ Answers:
     def analyze_cv_sentiment(
         self,
         cv_text: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze the sentiment and tone of a CV.
         Returns indicators about candidate's attitude and communication style.
         """
         # Simple keyword-based analysis
         positive_keywords = [
-            "متميز", "مبدع", "متحمس", "متفاني", "مسؤول", "فاعل",
-            "قائد", "فريق", "تعاون", "إنجاز", "نجاح", "تقدم",
-            "تطوير", "ابتكار", "حل", "تحدي", "تعلم", "نمو",
+            "متميز",
+            "مبدع",
+            "متحمس",
+            "متفاني",
+            "مسؤول",
+            "فاعل",
+            "قائد",
+            "فريق",
+            "تعاون",
+            "إنجاز",
+            "نجاح",
+            "تقدم",
+            "تطوير",
+            "ابتكار",
+            "حل",
+            "تحدي",
+            "تعلم",
+            "نمو",
         ]
         negative_keywords = [
-            "صعب", "تحدي كبير", "فشل", "عدم قدرة", "مشكلة جادة",
+            "صعب",
+            "تحدي كبير",
+            "فشل",
+            "عدم قدرة",
+            "مشكلة جادة",
         ]
 
         text_lower = cv_text.lower() if cv_text else ""

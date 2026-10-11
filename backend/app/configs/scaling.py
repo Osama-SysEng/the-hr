@@ -7,13 +7,13 @@
 - الإخطارات عند الامتلاء
 """
 
-from typing import Optional, Dict, List
 from dataclasses import dataclass
 from enum import Enum
 
 
 class ScalingStrategy(Enum):
     """استراتيجيات التوسع"""
+
     MANUAL = "manual"
     CPU_BASED = "cpu_based"
     MEMORY_BASED = "memory_based"
@@ -24,6 +24,7 @@ class ScalingStrategy(Enum):
 @dataclass
 class AutoScalingConfig:
     """إعدادات التوسع التلقائي"""
+
     min_instances: int = 2
     max_instances: int = 20
     target_cpu_utilization: float = 70.0
@@ -38,6 +39,7 @@ class AutoScalingConfig:
 @dataclass
 class LoadBalancerConfig:
     """إعدادات توازن الأحمال"""
+
     algorithm: str = "round_robin"
     health_check_interval: int = 30
     health_check_timeout: int = 5
@@ -50,6 +52,7 @@ class LoadBalancerConfig:
 @dataclass
 class SessionConfig:
     """إعدادات إدارة الجلسات في البيئة الموزعة"""
+
     external_storage: bool = True
     cookie_secure: bool = True
     cookie_httponly: bool = True
@@ -85,11 +88,12 @@ class ScalingManager:
         self.config = config or DEFAULT_AUTO_SCALING
         self.current_instances = self.config.min_instances
         self.last_scale_time: float = 0
-        self.metrics_history: List[Dict] = []
+        self.metrics_history: list[dict] = []
 
-    def should_scale_up(self, current_metrics: Dict) -> bool:
+    def should_scale_up(self, current_metrics: dict) -> bool:
         """تحديد ما إذا كان يجب التوسع"""
         import time
+
         now = time.time()
         if now - self.last_scale_time < self.config.scale_up_cooldown_seconds:
             return False
@@ -97,16 +101,14 @@ class ScalingManager:
         cpu = current_metrics.get("cpu_percent", 0)
         memory = current_metrics.get("memory_percent", 0)
 
-        if cpu > self.config.target_cpu_utilization * self.config.scale_up_threshold:
-            return True
-        if memory > self.config.target_memory_utilization * self.config.scale_up_threshold:
-            return True
+        return cpu > self.config.target_cpu_utilization * self.config.scale_up_threshold or (
+            memory > self.config.target_memory_utilization * self.config.scale_up_threshold
+        )
 
-        return False
-
-    def should_scale_down(self, current_metrics: Dict) -> bool:
+    def should_scale_down(self, current_metrics: dict) -> bool:
         """تحديد ما إذا كان يجب الانكماش"""
         import time
+
         now = time.time()
         if now - self.last_scale_time < self.config.scale_down_cooldown_seconds:
             return False
@@ -114,19 +116,17 @@ class ScalingManager:
         cpu = current_metrics.get("cpu_percent", 0)
         memory = current_metrics.get("memory_percent", 0)
 
-        if cpu < self.config.target_cpu_utilization * self.config.scale_down_threshold:
-            if memory < self.config.target_memory_utilization * self.config.scale_down_threshold:
-                return True
-
-        return False
+        return (
+            cpu < self.config.target_cpu_utilization * self.config.scale_down_threshold
+            and memory < self.config.target_memory_utilization * self.config.scale_down_threshold
+        )
 
     async def scale(self, target_instances: int) -> bool:
         """تغيير عدد الحالات النشطة"""
         import time
-        if target_instances < self.config.min_instances:
-            target_instances = self.config.min_instances
-        if target_instances > self.config.max_instances:
-            target_instances = self.config.max_instances
+
+        target_instances = max(target_instances, self.config.min_instances)
+        target_instances = min(target_instances, self.config.max_instances)
 
         if target_instances == self.current_instances:
             return False
@@ -135,13 +135,11 @@ class ScalingManager:
         self.last_scale_time = time.time()
         return True
 
-    def record_metrics(self, metrics: Dict) -> None:
+    def record_metrics(self, metrics: dict) -> None:
         """تسجيل مقياس جديد"""
         import time
-        self.metrics_history.append({
-            **metrics,
-            "timestamp": time.time()
-        })
+
+        self.metrics_history.append({**metrics, "timestamp": time.time()})
         if len(self.metrics_history) > 1000:
             self.metrics_history = self.metrics_history[-1000:]
 

@@ -1,5 +1,4 @@
 """اختبارات الموظفين"""
-import pytest
 
 
 def test_full_name():

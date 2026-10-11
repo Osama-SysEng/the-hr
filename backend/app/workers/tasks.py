@@ -7,16 +7,20 @@ each task in its own event loop.
 """
 
 import asyncio
+import logging
 import uuid
-from celery import shared_task
-from datetime import datetime, date, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+
 from app.core.database import async_session_factory
-from app.models.models import Payroll, AttendanceRecord, Employee, LeaveRequest, Candidate
+from app.models.models import AttendanceRecord, Candidate, Employee, Payroll
 from app.services.email_service import EmailService
 from app.services.sms_service import SMSService
+from celery import shared_task
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3)
@@ -40,7 +44,8 @@ def send_payslip_email_task(self, employee_id: str, payroll_id: str):
     try:
         return asyncio.run(_run())
     except Exception as e:
-        raise self.retry(exc=e, countdown=60)
+        logger.exception("send_payslip_email_task failed for employee %s", employee_id)
+        raise self.retry(exc=e, countdown=60) from e
 
 
 @shared_task(bind=True, max_retries=3)
@@ -64,7 +69,8 @@ def send_interview_invitation_task(self, candidate_id: str):
     try:
         return asyncio.run(_run())
     except Exception as e:
-        raise self.retry(exc=e, countdown=60)
+        logger.exception("send_interview_invitation_task failed for candidate %s", candidate_id)
+        raise self.retry(exc=e, countdown=60) from e
 
 
 @shared_task(bind=True, max_retries=3)
@@ -75,9 +81,7 @@ def send_attendance_notification_task(self, attendance_id: str):
             if not attendance:
                 return {"error": "Not found"}
             result = await db.execute(
-                select(Employee)
-                .where(Employee.id == attendance.employee_id)
-                .options(selectinload(Employee.department))
+                select(Employee).where(Employee.id == attendance.employee_id).options(selectinload(Employee.department))
             )
             employee = result.scalar_one_or_none()
             if employee and employee.department and employee.department.manager_id:
@@ -97,7 +101,8 @@ def send_attendance_notification_task(self, attendance_id: str):
     try:
         return asyncio.run(_run())
     except Exception as e:
-        raise self.retry(exc=e, countdown=60)
+        logger.exception("send_attendance_notification_task failed for attendance %s", attendance_id)
+        raise self.retry(exc=e, countdown=60) from e
 
 
 @shared_task(bind=True, max_retries=3)
@@ -108,11 +113,8 @@ def calculate_payroll_task(self, employee_id: str, month: int, year: int):
             if not employee:
                 return {"error": "Not found"}
             start_date = date(year, month, 1)
-            if month == 12:
-                end_date = date(year, 12, 31)
-            else:
-                end_date = date(year, month + 1, 1) - timedelta(days=1)
-            base = employee.salary_base or Decimal("5000")
+            end_date = date(year, 12, 31) if month == 12 else date(year, month + 1, 1) - timedelta(days=1)
+            base = employee.salary_base or Decimal(5000)
             payroll = Payroll(
                 id=uuid.uuid4(),
                 tenant_id=employee.tenant_id,
@@ -126,13 +128,13 @@ def calculate_payroll_task(self, employee_id: str, month: int, year: int):
                 transport_allowance=base * Decimal("0.10"),
                 meal_allowance=base * Decimal("0.05"),
                 total_earnings=base * Decimal("1.40"),
-                total_deductions=Decimal("0"),
+                total_deductions=Decimal(0),
                 social_insurance_employee=base * Decimal("0.11"),
                 social_insurance_employer=base * Decimal("0.1875"),
                 health_insurance=base * Decimal("0.01"),
                 net_salary=base * Decimal("1.40") - base * Decimal("0.12") - base * Decimal("0.01"),
                 status="calculated",
-                calculated_at=datetime.now(timezone.utc),
+                calculated_at=datetime.now(UTC),
             )
             db.add(payroll)
             await db.commit()
@@ -141,7 +143,8 @@ def calculate_payroll_task(self, employee_id: str, month: int, year: int):
     try:
         return asyncio.run(_run())
     except Exception as e:
-        raise self.retry(exc=e, countdown=60)
+        logger.exception("calculate_payroll_task failed for employee %s", employee_id)
+        raise self.retry(exc=e, countdown=60) from e
 
 
 @shared_task(bind=True, max_retries=3)
@@ -149,13 +152,12 @@ def cleanup_old_data_task(self, days: int = 90):
     async def _run():
         async with async_session_factory() as db:
             cutoff = date.today() - timedelta(days=days)
-            result = await db.execute(
-                AttendanceRecord.__table__.delete().where(AttendanceRecord.date < cutoff)
-            )
+            result = await db.execute(AttendanceRecord.__table__.delete().where(AttendanceRecord.date < cutoff))
             await db.commit()
             return {"success": True, "deleted": result.rowcount}
 
     try:
         return asyncio.run(_run())
     except Exception as e:
-        raise self.retry(exc=e, countdown=60)
+        logger.exception("cleanup_old_data_task failed")
+        raise self.retry(exc=e, countdown=60) from e

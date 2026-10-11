@@ -3,22 +3,20 @@ The H.R - Recruitment API Router
 AI CV Screening, Job Postings, Candidates, AI Interviews
 """
 
-from datetime import date, datetime, timedelta, timezone
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func, text
-from sqlalchemy.orm import selectinload
+import asyncio
+import logging
+import os
+import shutil
+import uuid
+from datetime import UTC, datetime
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import (
-    Candidate, JobPosting, AIInterview, Tenant, Employee, Department
-)
-import uuid
-import shutil
-import os
-import logging
+from app.models.models import AIInterview, Candidate, Department, JobPosting
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +28,6 @@ router = APIRouter(prefix="/recruitment", tags=["Recruitment"])
 # Schemas
 # -----------------------------------------------------------------------------
 from pydantic import BaseModel, Field
-from datetime import date, datetime
-from typing import Optional
-from decimal import Decimal as PyDecimal
 
 
 class JobCriteria(BaseModel):
@@ -44,107 +39,107 @@ class JobCriteria(BaseModel):
 
 class JobPostingCreateRequest(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
-    department_id: Optional[str] = None
-    location: Optional[str] = None
+    department_id: str | None = None
+    location: str | None = None
     employment_type: str = "full_time"
-    experience_required: Optional[str] = None
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
-    description: Optional[str] = None
-    requirements: Optional[str] = None
-    criteria: List[JobCriteria] = []
-    close_at: Optional[datetime] = None
+    experience_required: str | None = None
+    salary_min: float | None = None
+    salary_max: float | None = None
+    description: str | None = None
+    requirements: str | None = None
+    criteria: list[JobCriteria] = []
+    close_at: datetime | None = None
 
 
 class JobPostingUpdateRequest(BaseModel):
-    title: Optional[str] = None
-    department_id: Optional[str] = None
-    location: Optional[str] = None
-    employment_type: Optional[str] = None
-    experience_required: Optional[str] = None
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
-    description: Optional[str] = None
-    requirements: Optional[str] = None
-    criteria: Optional[List[JobCriteria]] = None
-    close_at: Optional[datetime] = None
+    title: str | None = None
+    department_id: str | None = None
+    location: str | None = None
+    employment_type: str | None = None
+    experience_required: str | None = None
+    salary_min: float | None = None
+    salary_max: float | None = None
+    description: str | None = None
+    requirements: str | None = None
+    criteria: list[JobCriteria] | None = None
+    close_at: datetime | None = None
 
 
 class JobPostingResponse(BaseModel):
     id: str
     title: str
-    department_id: Optional[str] = None
-    department_name: Optional[str] = None
-    location: Optional[str] = None
+    department_id: str | None = None
+    department_name: str | None = None
+    location: str | None = None
     employment_type: str
-    experience_required: Optional[str] = None
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
-    description: Optional[str] = None
-    requirements: Optional[str] = None
-    criteria: List[dict] = []
+    experience_required: str | None = None
+    salary_min: float | None = None
+    salary_max: float | None = None
+    description: str | None = None
+    requirements: str | None = None
+    criteria: list[dict] = []
     is_active: bool
-    posted_at: Optional[datetime] = None
-    close_at: Optional[datetime] = None
+    posted_at: datetime | None = None
+    close_at: datetime | None = None
     candidate_count: int = 0
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
 
 
 class CandidateCreateRequest(BaseModel):
-    job_posting_id: Optional[str] = None
+    job_posting_id: str | None = None
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     email: str
-    phone: Optional[str] = None
-    country: Optional[str] = None
-    city: Optional[str] = None
-    current_position: Optional[str] = None
-    current_company: Optional[str] = None
-    years_experience: Optional[int] = None
-    education: Optional[str] = None
-    source: Optional[str] = None
-    referred_by: Optional[str] = None
-    notes: Optional[str] = None
+    phone: str | None = None
+    country: str | None = None
+    city: str | None = None
+    current_position: str | None = None
+    current_company: str | None = None
+    years_experience: int | None = None
+    education: str | None = None
+    source: str | None = None
+    referred_by: str | None = None
+    notes: str | None = None
 
 
 class CandidateResponse(BaseModel):
     id: str
-    job_posting_id: Optional[str] = None
-    job_title: Optional[str] = None
+    job_posting_id: str | None = None
+    job_title: str | None = None
     first_name: str
     last_name: str
     full_name: str
     email: str
-    phone: Optional[str] = None
-    country: Optional[str] = None
-    city: Optional[str] = None
-    current_position: Optional[str] = None
-    current_company: Optional[str] = None
-    years_experience: Optional[int] = None
-    education: Optional[str] = None
-    cv_url: Optional[str] = None
-    cv_score: Optional[float] = None
+    phone: str | None = None
+    country: str | None = None
+    city: str | None = None
+    current_position: str | None = None
+    current_company: str | None = None
+    years_experience: int | None = None
+    education: str | None = None
+    cv_url: str | None = None
+    cv_score: float | None = None
     stage: str
-    cv_analysis: Optional[dict] = None
-    llm_extraction: Optional[dict] = None
-    evaluated_by: Optional[str] = None
-    evaluation_notes: Optional[str] = None
-    hired_at: Optional[datetime] = None
-    rejection_reason: Optional[str] = None
-    source: Optional[str] = None
+    cv_analysis: dict | None = None
+    llm_extraction: dict | None = None
+    evaluated_by: str | None = None
+    evaluation_notes: str | None = None
+    hired_at: datetime | None = None
+    rejection_reason: str | None = None
+    source: str | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
 
 
 class CandidateListResponse(BaseModel):
-    candidates: List[CandidateResponse]
+    candidates: list[CandidateResponse]
     total: int
     page: int
     page_size: int
@@ -153,7 +148,7 @@ class CandidateListResponse(BaseModel):
 # -----------------------------------------------------------------------------
 # Helper
 # -----------------------------------------------------------------------------
-def _build_job_response(job: JobPosting, dept: Optional[Department], candidate_count: int) -> JobPostingResponse:
+def _build_job_response(job: JobPosting, dept: Department | None, candidate_count: int) -> JobPostingResponse:
     return JobPostingResponse(
         id=job.id,
         title=job.title,
@@ -176,7 +171,7 @@ def _build_job_response(job: JobPosting, dept: Optional[Department], candidate_c
     )
 
 
-def _build_candidate_response(candidate: Candidate, job: Optional[JobPosting]) -> CandidateResponse:
+def _build_candidate_response(candidate: Candidate, job: JobPosting | None) -> CandidateResponse:
     return CandidateResponse(
         id=candidate.id,
         job_posting_id=candidate.job_posting_id,
@@ -210,10 +205,11 @@ def _build_candidate_response(candidate: Candidate, job: Optional[JobPosting]) -
 # -----------------------------------------------------------------------------
 # Job Postings
 # -----------------------------------------------------------------------------
-@router.get("/jobs", response_model=List[JobPostingResponse])
+@router.get("/jobs", response_model=list[JobPostingResponse])
 async def list_jobs(
-    active_only: bool = Query(True),
-    department_id: Optional[str] = Query(None),
+    *,
+    active_only: bool = Query(default=True),
+    department_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -232,9 +228,7 @@ async def list_jobs(
 
     response = []
     for job in jobs:
-        dept_result = await db.execute(
-            select(Department).where(Department.id == job.department_id)
-        )
+        dept_result = await db.execute(select(Department).where(Department.id == job.department_id))
         dept = dept_result.scalar_one_or_none()
 
         # Count candidates
@@ -297,7 +291,7 @@ async def create_job(
         tenant_id=tenant_id,
         **request.model_dump(),
         is_active=True,
-        posted_at=datetime.now(timezone.utc),
+        posted_at=datetime.now(UTC),
     )
     db.add(job)
     await db.commit()
@@ -305,9 +299,7 @@ async def create_job(
 
     # Load department
     if job.department_id:
-        dept_result = await db.execute(
-            select(Department).where(Department.id == job.department_id)
-        )
+        dept_result = await db.execute(select(Department).where(Department.id == job.department_id))
         dept = dept_result.scalar_one_or_none()
     else:
         dept = None
@@ -366,9 +358,7 @@ async def close_job(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(JobPosting).where(
-            and_(JobPosting.id == job_id, JobPosting.tenant_id == tenant_id)
-        )
+        select(JobPosting).where(and_(JobPosting.id == job_id, JobPosting.tenant_id == tenant_id))
     )
     job = result.scalar_one_or_none()
 
@@ -391,9 +381,9 @@ async def close_job(
 async def list_candidates(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    job_posting_id: Optional[str] = Query(None),
-    stage: Optional[str] = Query(None),
-    search: Optional[str] = Query(None),
+    job_posting_id: str | None = Query(None),
+    stage: str | None = Query(None),
+    search: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -429,9 +419,7 @@ async def list_candidates(
 
     response = []
     for candidate in candidates:
-        job_result = await db.execute(
-            select(JobPosting).where(JobPosting.id == candidate.job_posting_id)
-        )
+        job_result = await db.execute(select(JobPosting).where(JobPosting.id == candidate.job_posting_id))
         job = job_result.scalar_one_or_none()
         response.append(_build_candidate_response(candidate, job))
 
@@ -443,17 +431,34 @@ async def list_candidates(
     )
 
 
+# -----------------------------------------------------------------------------
+# Sync helpers (run via asyncio.to_thread to avoid blocking the event loop)
+# -----------------------------------------------------------------------------
+def _save_upload_file(cv_file: UploadFile, cv_path: str) -> None:
+    """Write an uploaded file to disk (blocking I/O, call via to_thread)."""
+    with open(cv_path, "wb") as buffer:
+        shutil.copyfileobj(cv_file.file, buffer)
+
+
+def _extract_docx_text(cv_path: str) -> str:
+    """Extract raw text from a .docx file (blocking I/O, call via to_thread)."""
+    import mammoth
+
+    with open(cv_path, "rb") as f:
+        return mammoth.extract_raw_text(f).value
+
+
 @router.post("/candidates", response_model=CandidateResponse, status_code=status.HTTP_201_CREATED)
 async def create_candidate(
     request: CandidateCreateRequest,
-    cv_file: Optional[UploadFile] = File(None),
+    cv_file: UploadFile | None = File(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager")),
 ):
     """إضافة مرشح جديد"""
     tenant_id = current_user["tenant_id"]
 
-    # Save CV file
+    # Save CV file (blocking file I/O offloaded to a worker thread)
     cv_url = None
     cv_text = None
     if cv_file:
@@ -461,23 +466,22 @@ async def create_candidate(
         os.makedirs(upload_dir, exist_ok=True)
         cv_filename = f"{uuid.uuid4().hex}_{cv_file.filename}"
         cv_path = os.path.join(upload_dir, cv_filename)
-        with open(cv_path, "wb") as buffer:
-            shutil.copyfileobj(cv_file.file, buffer)
+        await asyncio.to_thread(_save_upload_file, cv_file, cv_path)
         cv_url = f"/uploads/{tenant_id}/{cv_filename}"
 
         # Extract CV text
         try:
             import pdfplumber
+
             with pdfplumber.open(cv_path) as pdf:
                 cv_text = "\n".join([page.extract_text() or "" for page in pdf.pages])
         except Exception as exc:
+            logger.exception("pdfplumber extraction failed for %s", cv_filename)
             logger.debug("pdfplumber extraction failed for %s: %s", cv_filename, exc)
             try:
-                import mammoth
-                with open(cv_path, "rb") as f:
-                    result = mammoth.extract_raw_text(f)
-                    cv_text = result.value
+                cv_text = await asyncio.to_thread(_extract_docx_text, cv_path)
             except Exception as exc2:
+                logger.exception("mammoth extraction failed for %s", cv_filename)
                 logger.debug("mammoth extraction failed for %s: %s", cv_filename, exc2)
                 cv_text = ""
 
@@ -505,9 +509,7 @@ async def create_candidate(
     await db.commit()
     await db.refresh(candidate)
 
-    job_result = await db.execute(
-        select(JobPosting).where(JobPosting.id == candidate.job_posting_id)
-    )
+    job_result = await db.execute(select(JobPosting).where(JobPosting.id == candidate.job_posting_id))
     job = job_result.scalar_one_or_none()
 
     return _build_candidate_response(candidate, job)
@@ -542,7 +544,7 @@ async def get_candidate(
 async def update_candidate_stage(
     candidate_id: str,
     new_stage: str = Query(...),
-    notes: Optional[str] = None,
+    notes: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager")),
 ):
@@ -550,9 +552,7 @@ async def update_candidate_stage(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(Candidate).where(
-            and_(Candidate.id == candidate_id, Candidate.tenant_id == tenant_id)
-        )
+        select(Candidate).where(and_(Candidate.id == candidate_id, Candidate.tenant_id == tenant_id))
     )
     candidate = result.scalar_one_or_none()
 
@@ -564,12 +564,14 @@ async def update_candidate_stage(
 
     # Track stage history
     history = candidate.stage_history or []
-    history.append({
-        "from": candidate.stage,
-        "to": new_stage,
-        "changed_by": current_user["user_id"],
-        "changed_at": datetime.now(timezone.utc).isoformat(),
-    })
+    history.append(
+        {
+            "from": candidate.stage,
+            "to": new_stage,
+            "changed_by": current_user["user_id"],
+            "changed_at": datetime.now(UTC).isoformat(),
+        }
+    )
     candidate.stage_history = history
     candidate.stage = new_stage
     if notes:
@@ -577,7 +579,7 @@ async def update_candidate_stage(
 
     # If hired, record date
     if new_stage == "hired":
-        candidate.hired_at = datetime.now(timezone.utc)
+        candidate.hired_at = datetime.now(UTC)
 
     await db.commit()
 
@@ -593,7 +595,7 @@ async def update_candidate_stage(
 @router.post("/candidates/{candidate_id}/screen")
 async def screen_candidate(
     candidate_id: str,
-    job_criteria: Optional[List[dict]] = None,
+    job_criteria: list[dict] | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager", "hr_manager")),
 ):
@@ -604,9 +606,7 @@ async def screen_candidate(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(Candidate).where(
-            and_(Candidate.id == candidate_id, Candidate.tenant_id == tenant_id)
-        )
+        select(Candidate).where(and_(Candidate.id == candidate_id, Candidate.tenant_id == tenant_id))
     )
     candidate = result.scalar_one_or_none()
 
@@ -619,16 +619,19 @@ async def screen_candidate(
     # Get job criteria from job posting or use default
     criteria = job_criteria
     if not criteria and candidate.job_posting_id:
-        job_result = await db.execute(
-            select(JobPosting).where(JobPosting.id == candidate.job_posting_id)
-        )
+        job_result = await db.execute(select(JobPosting).where(JobPosting.id == candidate.job_posting_id))
         job = job_result.scalar_one_or_none()
         if job and job.criteria:
             criteria = job.criteria
         elif job:
             criteria = [
                 {"title": "خبرة ذات صلة", "keywords": "خبرة,سنوات,سنية", "weight": 30, "required": True},
-                {"title": "مهارات تقنية", "keywords": "برمجة,تقنية,تقنيات,programming", "weight": 30, "required": False},
+                {
+                    "title": "مهارات تقنية",
+                    "keywords": "برمجة,تقنية,تقنيات,programming",
+                    "weight": 30,
+                    "required": False,
+                },
                 {"title": "التعليم", "keywords": "بكالوريوس,ماجستير,دكتوراه,جامعة", "weight": 20, "required": False},
             ]
 
@@ -649,14 +652,16 @@ async def screen_candidate(
         score = (matched / len(keywords)) * 100 if keywords else 0
         total_score += score * criterion["weight"] / total_weight
 
-        criteria_results.append({
-            "criterion": criterion["title"],
-            "score": round(score, 1),
-            "weight": criterion["weight"],
-            "matched_keywords": [kw for kw in keywords if kw.strip() in normalized_text],
-            "missing_keywords": [kw for kw in keywords if kw.strip() not in normalized_text],
-            "required": criterion.get("required", False),
-        })
+        criteria_results.append(
+            {
+                "criterion": criterion["title"],
+                "score": round(score, 1),
+                "weight": criterion["weight"],
+                "matched_keywords": [kw for kw in keywords if kw.strip() in normalized_text],
+                "missing_keywords": [kw for kw in keywords if kw.strip() not in normalized_text],
+                "required": criterion.get("required", False),
+            }
+        )
 
     avg_score = round(total_score, 1)
 
@@ -665,27 +670,25 @@ async def screen_candidate(
     if candidate.cv_text and (os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")):
         try:
             from dataclasses import asdict
+
             from app.services.llm_service import llm_service
-            extraction = llm_service.extract_cv_facts(
-                candidate.cv_text, [c["title"] for c in criteria]
-            )
+
+            extraction = llm_service.extract_cv_facts(candidate.cv_text, [c["title"] for c in criteria])
             llm_extraction = asdict(extraction) if extraction is not None else None
-        except Exception as exc:
-            logger.warning("CV LLM extraction failed, continuing with keyword score: %s", exc)
+        except Exception:
+            logger.exception("CV LLM extraction failed for candidate %s", candidate_id)
 
     # Update candidate with scores
     candidate.cv_score = avg_score
     candidate.cv_analysis = {
         "score": avg_score,
         "criteria_results": criteria_results,
-        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+        "analyzed_at": datetime.now(UTC).isoformat(),
     }
     candidate.llm_extraction = llm_extraction
 
     # Update stage based on score
-    if avg_score >= 70:
-        candidate.stage = "screening"
-    elif avg_score >= 40:
+    if avg_score >= 70 or avg_score >= 40:
         candidate.stage = "screening"
     else:
         candidate.stage = "rejected"
@@ -717,9 +720,9 @@ async def invite_ai_interview(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(Candidate).where(
-            and_(Candidate.id == candidate_id, Candidate.tenant_id == tenant_id)
-        ).options(selectinload(Candidate.job_posting))
+        select(Candidate)
+        .where(and_(Candidate.id == candidate_id, Candidate.tenant_id == tenant_id))
+        .options(selectinload(Candidate.job_posting))
     )
     candidate = result.scalar_one_or_none()
 
@@ -736,9 +739,7 @@ async def invite_ai_interview(
         )
 
     # Check if interview already exists
-    int_result = await db.execute(
-        select(AIInterview).where(AIInterview.candidate_id == candidate_id)
-    )
+    int_result = await db.execute(select(AIInterview).where(AIInterview.candidate_id == candidate_id))
     if int_result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -756,7 +757,7 @@ async def invite_ai_interview(
         job_posting_id=candidate.job_posting_id,
         questions=questions,
         status="pending",
-        invitation_sent_at=datetime.now(timezone.utc),
+        invitation_sent_at=datetime.now(UTC),
     )
     db.add(interview)
     await db.commit()
@@ -812,7 +813,7 @@ async def get_interview(
 @router.post("/interviews/{interview_id}/complete")
 async def complete_interview(
     interview_id: str,
-    answers: List[dict],
+    answers: list[dict],
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -823,11 +824,9 @@ async def complete_interview(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(AIInterview).where(
-            and_(AIInterview.id == interview_id, AIInterview.tenant_id == tenant_id)
-        ).options(
-            selectinload(AIInterview.candidate).selectinload(Candidate.job_posting)
-        )
+        select(AIInterview)
+        .where(and_(AIInterview.id == interview_id, AIInterview.tenant_id == tenant_id))
+        .options(selectinload(AIInterview.candidate).selectinload(Candidate.job_posting))
     )
     interview = result.scalar_one_or_none()
 
@@ -839,19 +838,20 @@ async def complete_interview(
 
     interview.answers = answers
     interview.status = "completed"
-    interview.completed_at = datetime.now(timezone.utc)
+    interview.completed_at = datetime.now(UTC)
 
     # Evaluate answers: use AI when keys are configured, else deterministic heuristic
     evaluation = None
     if os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY"):
         try:
             from app.services.llm_service import llm_service
+
             job = interview.candidate.job_posting if interview.candidate else None
             evaluation = llm_service.evaluate_interview_answers(
                 interview.questions or [], answers, job_title=job.title if job else ""
             )
-        except Exception as exc:
-            logger.warning("AI interview evaluation failed, using heuristic: %s", exc)
+        except Exception:
+            logger.exception("AI interview evaluation failed for interview %s", interview_id)
     if evaluation is None:
         evaluation = evaluate_interview_answers(interview.questions, answers)
     interview.evaluation = evaluation
@@ -876,7 +876,7 @@ def normalize_text(text: str) -> str:
     return text.lower().strip()
 
 
-def generate_interview_questions(job: Optional[JobPosting], candidate: Candidate) -> List[dict]:
+def generate_interview_questions(job: JobPosting | None, candidate: Candidate) -> list[dict]:
     """Generate interview questions based on job and candidate."""
     questions = [
         {
@@ -897,44 +897,52 @@ def generate_interview_questions(job: Optional[JobPosting], candidate: Candidate
 
     if job and job.criteria:
         for criterion in job.criteria[:3]:
-            questions.append({
-                "id": uuid.uuid4().hex,
-                "question": f"السؤال عن: {criterion['title']} - {criterion['keywords']}",
-                "type": "text",
-                "max_time_minutes": 3,
-                "role": "skills",
-            })
+            questions.append(
+                {
+                    "id": uuid.uuid4().hex,
+                    "question": f"السؤال عن: {criterion['title']} - {criterion['keywords']}",
+                    "type": "text",
+                    "max_time_minutes": 3,
+                    "role": "skills",
+                }
+            )
 
     if job and job.requirements:
-        questions.append({
-            "id": uuid.uuid4().hex,
-            "question": f"ما هي أهم التحديات التي واجهتها في عملك السابق وكيف تغلبت عليها؟",
-            "type": "text",
-            "max_time_minutes": 3,
-            "role": "problem_solving",
-        })
+        questions.append(
+            {
+                "id": uuid.uuid4().hex,
+                "question": "ما هي أهم التحديات التي واجهتها في عملك السابق وكيف تغلبت عليها؟",
+                "type": "text",
+                "max_time_minutes": 3,
+                "role": "problem_solving",
+            }
+        )
 
     if job and job.salary_min:
-        questions.append({
-            "id": uuid.uuid4().hex,
-            "question": "ما هي توقعاتك للراتب؟",
-            "type": "text",
-            "max_time_minutes": 1,
-            "role": "salary",
-        })
+        questions.append(
+            {
+                "id": uuid.uuid4().hex,
+                "question": "ما هي توقعاتك للراتب؟",
+                "type": "text",
+                "max_time_minutes": 1,
+                "role": "salary",
+            }
+        )
 
-    questions.append({
-        "id": uuid.uuid4().hex,
-        "question": "لماذا ترغب في الانضمام إلى شركتنا؟",
-        "type": "text",
-        "max_time_minutes": 2,
-        "role": "motivation",
-    })
+    questions.append(
+        {
+            "id": uuid.uuid4().hex,
+            "question": "لماذا ترغب في الانضمام إلى شركتنا؟",
+            "type": "text",
+            "max_time_minutes": 2,
+            "role": "motivation",
+        }
+    )
 
     return questions
 
 
-def evaluate_interview_answers(questions: List[dict], answers: List[dict]) -> dict:
+def evaluate_interview_answers(questions: list[dict], answers: list[dict]) -> dict:
     """Deterministic heuristic evaluation used when no AI key is configured.
 
     When OPENAI_API_KEY or GEMINI_API_KEY is set, callers prefer
@@ -944,7 +952,7 @@ def evaluate_interview_answers(questions: List[dict], answers: List[dict]) -> di
     scores = []
     details = []
 
-    for i, (q, a) in enumerate(zip(questions, answers)):
+    for q, a in zip(questions, answers, strict=False):
         answer_text = a.get("answer", "")
         length_score = min(len(answer_text.split()) / 50, 1.0) * 30  # Content length
         relevance_score = 40  # Placeholder - would be AI evaluated
@@ -953,12 +961,14 @@ def evaluate_interview_answers(questions: List[dict], answers: List[dict]) -> di
         score = round(length_score + relevance_score + clarity_score, 1)
         scores.append(score)
 
-        details.append({
-            "question_id": q["id"],
-            "question": q["question"],
-            "score": score,
-            "max_score": 100,
-        })
+        details.append(
+            {
+                "question_id": q["id"],
+                "question": q["question"],
+                "score": score,
+                "max_score": 100,
+            }
+        )
 
     overall = round(sum(scores) / len(scores), 1) if scores else 0
 

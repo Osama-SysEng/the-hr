@@ -3,21 +3,17 @@ The H.R - Leave & Loans API Router
 Leave management, employee loans/advance
 """
 
-from datetime import date, datetime, timedelta, timezone
-from typing import Optional, List
+import uuid
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
-from sqlalchemy.orm import selectinload
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import (
-    LeaveRequest, EmployeeLoan, Employee, Tenant, Department
-)
-import uuid
-
+from app.models.models import Department, Employee, EmployeeLoan, LeaveRequest
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/hr", tags=["Leave & Loans"])
 
@@ -26,16 +22,14 @@ router = APIRouter(prefix="/hr", tags=["Leave & Loans"])
 # Schemas
 # -----------------------------------------------------------------------------
 from pydantic import BaseModel, Field
-from datetime import date, datetime
-from typing import Optional
 
 
 class LeaveRequestCreate(BaseModel):
     leave_type: str = Field(..., min_length=1, max_length=50)
     start_date: date
     end_date: date
-    reason: Optional[str] = None
-    attachment_url: Optional[str] = None
+    reason: str | None = None
+    attachment_url: str | None = None
 
 
 class LeaveRequestResponse(BaseModel):
@@ -43,17 +37,17 @@ class LeaveRequestResponse(BaseModel):
     employee_id: str
     employee_name: str
     employee_number: str
-    department_name: Optional[str] = None
+    department_name: str | None = None
     leave_type: str
     start_date: date
     end_date: date
     total_days: int
-    reason: Optional[str] = None
+    reason: str | None = None
     status: str
-    attachment_url: Optional[str] = None
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
-    rejection_reason: Optional[str] = None
+    attachment_url: str | None = None
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    rejection_reason: str | None = None
     created_at: datetime
 
     class Config:
@@ -61,7 +55,7 @@ class LeaveRequestResponse(BaseModel):
 
 
 class LeaveListResponse(BaseModel):
-    leaves: List[LeaveRequestResponse]
+    leaves: list[LeaveRequestResponse]
     total: int
     page: int
     page_size: int
@@ -80,7 +74,7 @@ class LeaveBalanceResponse(BaseModel):
 class LoanRequestCreate(BaseModel):
     loan_type: str = Field(..., min_length=1, max_length=50)
     amount: float = Field(..., gt=0)
-    purpose: Optional[str] = None
+    purpose: str | None = None
 
 
 class LoanResponse(BaseModel):
@@ -90,15 +84,15 @@ class LoanResponse(BaseModel):
     employee_number: str
     loan_type: str
     amount: float
-    purpose: Optional[str] = None
+    purpose: str | None = None
     request_date: date
     repayment_start: date
-    repayment_end: Optional[date] = None
+    repayment_end: date | None = None
     monthly_installment: float
     remaining_balance: float
     status: str
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
+    approved_by: str | None = None
+    approved_at: datetime | None = None
     created_at: datetime
 
     class Config:
@@ -106,7 +100,7 @@ class LoanResponse(BaseModel):
 
 
 class LoanListResponse(BaseModel):
-    loans: List[LoanResponse]
+    loans: list[LoanResponse]
     total: int
     page: int
     page_size: int
@@ -115,7 +109,7 @@ class LoanListResponse(BaseModel):
 # -----------------------------------------------------------------------------
 # Helper
 # -----------------------------------------------------------------------------
-def _build_leave_response(leave: LeaveRequest, employee: Employee, dept: Optional[Department]) -> LeaveRequestResponse:
+def _build_leave_response(leave: LeaveRequest, employee: Employee, dept: Department | None) -> LeaveRequestResponse:
     return LeaveRequestResponse(
         id=leave.id,
         employee_id=leave.employee_id,
@@ -164,10 +158,10 @@ def _build_loan_response(loan: EmployeeLoan, employee: Employee) -> LoanResponse
 async def list_leaves(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = Query(None),
-    employee_id: Optional[str] = Query(None),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
+    status: str | None = Query(None),
+    employee_id: str | None = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -179,9 +173,8 @@ async def list_leaves(
     query = select(LeaveRequest).where(LeaveRequest.tenant_id == tenant_id)
 
     # Non-admins only see their own
-    if role not in ("super_admin", "company_admin", "hr_manager", "manager"):
-        if emp_id:
-            query = query.where(LeaveRequest.employee_id == emp_id)
+    if role not in ("super_admin", "company_admin", "hr_manager", "manager") and emp_id:
+        query = query.where(LeaveRequest.employee_id == emp_id)
 
     if status:
         query = query.where(LeaveRequest.status == status)
@@ -250,9 +243,7 @@ async def create_leave_request(
     await db.commit()
     await db.refresh(leave)
 
-    emp_result = await db.execute(
-        select(Employee).where(Employee.id == employee_id)
-    )
+    emp_result = await db.execute(select(Employee).where(Employee.id == employee_id))
     employee = emp_result.scalar_one_or_none()
     dept = employee.department if employee else None
 
@@ -269,9 +260,9 @@ async def approve_leave(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(LeaveRequest).where(
-            and_(LeaveRequest.id == leave_id, LeaveRequest.tenant_id == tenant_id)
-        ).options(selectinload(LeaveRequest.employee))
+        select(LeaveRequest)
+        .where(and_(LeaveRequest.id == leave_id, LeaveRequest.tenant_id == tenant_id))
+        .options(selectinload(LeaveRequest.employee))
     )
     leave = result.scalar_one_or_none()
 
@@ -289,7 +280,7 @@ async def approve_leave(
 
     leave.status = "approved"
     leave.approved_by = current_user["user_id"]
-    leave.approved_at = datetime.now(timezone.utc)
+    leave.approved_at = datetime.now(UTC)
     await db.commit()
 
     return {"message": "تمت الموافقة على الإجازة", "status": leave.status}
@@ -298,7 +289,7 @@ async def approve_leave(
 @router.put("/leaves/{leave_id}/reject")
 async def reject_leave(
     leave_id: str,
-    reason: Optional[str] = None,
+    reason: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager", "manager")),
 ):
@@ -306,9 +297,7 @@ async def reject_leave(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(LeaveRequest).where(
-            and_(LeaveRequest.id == leave_id, LeaveRequest.tenant_id == tenant_id)
-        )
+        select(LeaveRequest).where(and_(LeaveRequest.id == leave_id, LeaveRequest.tenant_id == tenant_id))
     )
     leave = result.scalar_one_or_none()
 
@@ -326,7 +315,7 @@ async def reject_leave(
 
     leave.status = "rejected"
     leave.approved_by = current_user["user_id"]
-    leave.approved_at = datetime.now(timezone.utc)
+    leave.approved_at = datetime.now(UTC)
     if reason:
         leave.rejection_reason = reason
     await db.commit()
@@ -352,9 +341,7 @@ async def get_leave_balance(
         }
 
     # Get employee leave entitlement (based on service years)
-    emp_result = await db.execute(
-        select(Employee).where(Employee.id == employee_id)
-    )
+    emp_result = await db.execute(select(Employee).where(Employee.id == employee_id))
     employee = emp_result.scalar_one_or_none()
 
     if not employee:
@@ -426,8 +413,8 @@ async def get_leave_balance(
 async def list_loans(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = Query(None),
-    employee_id: Optional[str] = Query(None),
+    status: str | None = Query(None),
+    employee_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -439,9 +426,8 @@ async def list_loans(
     query = select(EmployeeLoan).where(EmployeeLoan.tenant_id == tenant_id)
 
     # Non-admins only see their own
-    if role not in ("super_admin", "company_admin", "hr_manager", "accountant"):
-        if emp_id:
-            query = query.where(EmployeeLoan.employee_id == emp_id)
+    if role not in ("super_admin", "company_admin", "hr_manager", "accountant") and emp_id:
+        query = query.where(EmployeeLoan.employee_id == emp_id)
 
     if status:
         query = query.where(EmployeeLoan.status == status)
@@ -456,9 +442,7 @@ async def list_loans(
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar() or 0
 
-    result = await db.execute(
-        query.options(selectinload(EmployeeLoan.employee))
-    )
+    result = await db.execute(query.options(selectinload(EmployeeLoan.employee)))
     loans = result.scalars().all()
 
     return LoanListResponse(
@@ -485,9 +469,7 @@ async def request_loan(
             detail="يجب أن يكون لديك حساب موظف لطلب قرض",
         )
 
-    emp_result = await db.execute(
-        select(Employee).where(Employee.id == employee_id)
-    )
+    emp_result = await db.execute(select(Employee).where(Employee.id == employee_id))
     employee = emp_result.scalar_one_or_none()
 
     # Calculate repayment schedule
@@ -532,9 +514,7 @@ async def approve_loan(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(EmployeeLoan).where(
-            and_(EmployeeLoan.id == loan_id, EmployeeLoan.tenant_id == tenant_id)
-        )
+        select(EmployeeLoan).where(and_(EmployeeLoan.id == loan_id, EmployeeLoan.tenant_id == tenant_id))
     )
     loan = result.scalar_one_or_none()
 
@@ -552,7 +532,7 @@ async def approve_loan(
 
     loan.status = "active"
     loan.approved_by = current_user["user_id"]
-    loan.approved_at = datetime.now(timezone.utc)
+    loan.approved_at = datetime.now(UTC)
     await db.commit()
 
     return {"message": "تمت الموافقة على القرض", "status": loan.status}
@@ -561,7 +541,7 @@ async def approve_loan(
 @router.put("/loans/{loan_id}/reject")
 async def reject_loan(
     loan_id: str,
-    reason: Optional[str] = None,
+    reason: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager")),
 ):
@@ -569,9 +549,7 @@ async def reject_loan(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(EmployeeLoan).where(
-            and_(EmployeeLoan.id == loan_id, EmployeeLoan.tenant_id == tenant_id)
-        )
+        select(EmployeeLoan).where(and_(EmployeeLoan.id == loan_id, EmployeeLoan.tenant_id == tenant_id))
     )
     loan = result.scalar_one_or_none()
 
@@ -589,7 +567,7 @@ async def reject_loan(
 
     loan.status = "rejected"
     loan.approved_by = current_user["user_id"]
-    loan.approved_at = datetime.now(timezone.utc)
+    loan.approved_at = datetime.now(UTC)
     await db.commit()
 
     return {"message": "تم رفض القرض", "status": loan.status}

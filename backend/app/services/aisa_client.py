@@ -10,11 +10,11 @@ AIsa Client — Connect The H.R to AIsa's APIs, Skills, and LLMs
   AISA_API_KEY=sk-aisa-CHANGE-ME
 """
 
-from typing import Any, Dict, List, Optional
-import os
-import httpx
-import json
 import logging
+import os
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -24,20 +24,18 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 AISA_BASE_URL = os.getenv("AISA_BASE_URL", "https://api.aisa.one/v1")
-AISA_API_KEY = os.getenv(
-    "AISA_API_KEY",
-    ""
-)
+AISA_API_KEY = os.getenv("AISA_API_KEY", "")
 AISA_APIS_BASE_URL = os.getenv("AISA_APIS_BASE_URL", "https://api.aisa.one/apis/v1")
 
 # الحد الأقصى للمكالمات المدفوعة (الحماية)
 MAX_COST_USD = float(os.getenv("AISA_MAX_COST_USD", "10.0"))
-COST_TRACKER: Dict[str, float] = {"total_spend": 0.0}
+COST_TRACKER: dict[str, float] = {"total_spend": 0.0}
 
 
 # =============================================================================
 # العميل
 # =============================================================================
+
 
 class AIsaClient:
     """
@@ -52,8 +50,8 @@ class AIsaClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         timeout: float = 30.0,
     ):
         self.api_key = api_key or AISA_API_KEY
@@ -74,7 +72,7 @@ class AIsaClient:
     # -------------------------------------------------------------------------
     # النماذج (Models)
     # -------------------------------------------------------------------------
-    def list_models(self) -> List[Dict[str, Any]]:
+    def list_models(self) -> list[dict[str, Any]]:
         """الحصول على قائمة النماذج المتاحة"""
         response = self._client.get("/models")
         response.raise_for_status()
@@ -82,7 +80,7 @@ class AIsaClient:
         models = data.get("data", [])
         return models
 
-    def get_model_info(self, model: str) -> Dict[str, Any]:
+    def get_model_info(self, model: str) -> dict[str, Any]:
         """معلومات نموذج محدد"""
         response = self._client.get(f"/models/{model}")
         response.raise_for_status()
@@ -94,12 +92,13 @@ class AIsaClient:
     def chat_completions(
         self,
         model: str,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.3,
         max_tokens: int = 4000,
+        *,
         stream: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         إرسال طلب Chat Completion إلى AIsa.
 
@@ -132,9 +131,7 @@ class AIsaClient:
                 cost = float(cost_header)
                 COST_TRACKER["total_spend"] += cost
                 if COST_TRACKER["total_spend"] > MAX_COST_USD:
-                    raise RuntimeError(
-                        f"تخطى الحد الأقصى للتكلفة (${MAX_COST_USD})"
-                    )
+                    raise RuntimeError(f"تخطى الحد الأقصى للتكلفة (${MAX_COST_USD})")
             except (ValueError, TypeError) as exc:
                 # Malformed pricing header — ignore it but keep a trace.
                 logger.debug("Ignoring invalid x-aisa-pricing header %r: %s", cost_header, exc)
@@ -171,8 +168,8 @@ class AIsaClient:
         self,
         endpoint: str,
         method: str = "GET",
-        payload: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+        payload: dict | None = None,
+    ) -> dict[str, Any]:
         """
         مكالمة إلى AIsa Data APIs.
         المسار الكامل: https://api.aisa.one/apis/v1/{endpoint}
@@ -200,15 +197,15 @@ class AIsaClient:
     # -------------------------------------------------------------------------
     # Skills
     # -------------------------------------------------------------------------
-    def list_skills(self) -> List[Dict[str, Any]]:
+    def list_skills(self) -> list[dict[str, Any]]:
         """الحصول على قائمة مهارات AIsa المتاحة"""
         return self.call_api("skills", method="GET")
 
     def call_skill(
         self,
         skill_name: str,
-        input_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        input_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """استدعاء مهارة محددة"""
         return self.call_api(
             f"skills/{skill_name}/execute",
@@ -219,7 +216,7 @@ class AIsaClient:
     # -------------------------------------------------------------------------
     # التكلفة والتتبع
     # -------------------------------------------------------------------------
-    def get_cost_tracker(self) -> Dict[str, float]:
+    def get_cost_tracker(self) -> dict[str, float]:
         """الحصول على تتبع التكلفة الحالي"""
         return dict(COST_TRACKER)
 
@@ -232,7 +229,7 @@ class AIsaClient:
 # التهيئة السريعة
 # =============================================================================
 
-_client: Optional[AIsaClient] = None
+_client: AIsaClient | None = None
 
 
 def get_aisa_client() -> AIsaClient:

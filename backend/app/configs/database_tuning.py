@@ -7,13 +7,13 @@
 - تحسينات تلقائية
 """
 
-from typing import Optional, Dict, List
 from dataclasses import dataclass
 
 
 @dataclass
 class ConnectionPoolConfig:
     """إعدادات اتصال قاعدة البيانات"""
+
     pool_size: int = 20
     max_overflow: int = 40
     pool_timeout: int = 30
@@ -25,8 +25,9 @@ class ConnectionPoolConfig:
 @dataclass
 class ReadReplicaConfig:
     """إعدادات نسخة القراءة"""
+
     enabled: bool = False
-    url: Optional[str] = None
+    url: str | None = None
     weight: int = 1
     read_only: bool = True
 
@@ -34,6 +35,7 @@ class ReadReplicaConfig:
 @dataclass
 class IndexConfig:
     """إعدادات الفهارس"""
+
     auto_create_indexes: bool = True
     analyze_after_migration: bool = True
     vacuum_after_big_operations: bool = True
@@ -50,9 +52,9 @@ DEFAULT_POOL_CONFIG = ConnectionPoolConfig(
     echo=False,
 )
 
-READ_REPLICAS: List[ReadReplicaConfig] = []
+READ_REPLICAS: list[ReadReplicaConfig] = []
 
-RECOMMENDED_INDEXES: List[Dict] = [
+RECOMMENDED_INDEXES: list[dict] = [
     {
         "table": "attendance_records",
         "columns": ["employee_id", "attendance_date"],
@@ -141,7 +143,7 @@ class DatabaseOptimizer:
         self.indexes_created: set = set()
         self.analyze_scheduled: set = set()
 
-    async def create_index_if_not_exists(self, index_config: Dict) -> bool:
+    async def create_index_if_not_exists(self, index_config: dict) -> bool:
         """إنشاء فهرس إذا لم يكن موجودًا"""
         index_name = index_config["name"]
         if index_name in self.indexes_created:
@@ -159,12 +161,12 @@ class DatabaseOptimizer:
         """VACUUM ANALYZE للجدول"""
         await self.analyze_table(table_name)
 
-    async def optimize_all(self, tables: List[str]) -> None:
+    async def optimize_all(self, tables: list[str]) -> None:
         """تحسين جميع الجداول المحددة"""
         for table in tables:
             await self.analyze_table(table)
 
-    def get_missing_indexes(self) -> List[Dict]:
+    def get_missing_indexes(self) -> list[dict]:
         """الحصول على الفهارس المفقودة"""
         existing = self.indexes_created
         missing = [idx for idx in RECOMMENDED_INDEXES if idx["name"] not in existing]

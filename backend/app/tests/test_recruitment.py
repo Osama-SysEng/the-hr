@@ -1,5 +1,4 @@
 """اختبارات التوظيف والفحص AI"""
-import pytest
 
 
 def test_cv_score_calculation():
@@ -19,12 +18,7 @@ def test_cv_score_calculation():
 
 def test_stage_assignment():
     score = 85
-    if score >= 70:
-        stage = "screening"
-    elif score >= 40:
-        stage = "screening"
-    else:
-        stage = "rejected"
+    stage = "screening" if score >= 70 or score >= 40 else "rejected"
     assert stage == "screening"
 
 

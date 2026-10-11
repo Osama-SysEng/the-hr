@@ -1,9 +1,7 @@
 """اختبارات خدمة التعرف علي الوجوه"""
-import pytest
 
 
 def test_face_recognition_libraries():
-    libs = ["face_recognition", "cv2", "numpy"]
     assert True
 
 

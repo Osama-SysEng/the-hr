@@ -3,17 +3,20 @@ The H.R - Security Module
 JWT Authentication + RBAC + Password Hashing
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional
-from jose import JWTError, jwt
+import logging
+from datetime import UTC, datetime, timedelta
+
 import bcrypt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.models import User
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------------
@@ -29,6 +32,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception:
+        logger.exception("Password verification failed")
         return False
 
 
@@ -39,28 +43,26 @@ def create_access_token(
     subject: str,
     tenant_id: str,
     role: str,
-    employee_id: Optional[str] = None,
-    expires_delta: Optional[timedelta] = None,
+    employee_id: str | None = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """
     Create a JWT access token.
-    
+
     Includes: user_id, tenant_id (multi-tenancy), role, employee_id
     """
-    expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    
+    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+
     to_encode = {
         "sub": subject,
         "tenant_id": tenant_id,
         "role": role,
         "employee_id": employee_id,
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
         "type": "access",
     }
-    
+
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
@@ -71,9 +73,9 @@ def decode_access_token(token: str) -> dict:
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {str(e)}",
+            detail=f"Invalid token: {e!s}",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
 
 
 # -----------------------------------------------------------------------------
@@ -81,32 +83,54 @@ def decode_access_token(token: str) -> dict:
 # -----------------------------------------------------------------------------
 ROLE_PERMISSIONS = {
     "super_admin": {
-        "tenants:read", "tenants:write",
-        "users:read", "users:write", "users:delete",
-        "employees:read", "employees:write", "employees:delete",
-        "attendance:read", "attendance:write",
-        "payroll:read", "payroll:write",
-        "recruitment:read", "recruitment:write",
-        "supply_chain:read", "supply_chain:write",
-        "analytics:read", "analytics:write",
-        "settings:read", "settings:write",
+        "tenants:read",
+        "tenants:write",
+        "users:read",
+        "users:write",
+        "users:delete",
+        "employees:read",
+        "employees:write",
+        "employees:delete",
+        "attendance:read",
+        "attendance:write",
+        "payroll:read",
+        "payroll:write",
+        "recruitment:read",
+        "recruitment:write",
+        "supply_chain:read",
+        "supply_chain:write",
+        "analytics:read",
+        "analytics:write",
+        "settings:read",
+        "settings:write",
         "audit:read",
     },
     "company_admin": {
-        "employees:read", "employees:write", "employees:delete",
-        "attendance:read", "attendance:write",
-        "payroll:read", "payroll:write",
-        "recruitment:read", "recruitment:write",
-        "supply_chain:read", "supply_chain:write",
-        "analytics:read", "analytics:write",
+        "employees:read",
+        "employees:write",
+        "employees:delete",
+        "attendance:read",
+        "attendance:write",
+        "payroll:read",
+        "payroll:write",
+        "recruitment:read",
+        "recruitment:write",
+        "supply_chain:read",
+        "supply_chain:write",
+        "analytics:read",
+        "analytics:write",
         "users:read",
-        "settings:read", "settings:write",
+        "settings:read",
+        "settings:write",
     },
     "hr_manager": {
-        "employees:read", "employees:write",
-        "attendance:read", "attendance:write",
+        "employees:read",
+        "employees:write",
+        "attendance:read",
+        "attendance:write",
         "payroll:read",
-        "recruitment:read", "recruitment:write",
+        "recruitment:read",
+        "recruitment:write",
         "analytics:read",
     },
     "manager": {
@@ -122,7 +146,8 @@ ROLE_PERMISSIONS = {
         "leave:write",  # own leave requests
     },
     "accountant": {
-        "payroll:read", "payroll:write",
+        "payroll:read",
+        "payroll:write",
         "employees:read",
     },
 }
@@ -134,17 +159,17 @@ async def get_current_user(
 ) -> dict:
     """Decode token and return user context."""
     payload = decode_access_token(credentials.credentials)
-    
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token: missing subject")
-    
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found or inactive")
-    
+
     return {
         "user": user,
         "user_id": user_id,
@@ -156,6 +181,7 @@ async def get_current_user(
 
 def require_role(*allowed_roles: str):
     """Dependency factory: only allow specific roles."""
+
     def checker(current_user: dict = Depends(get_current_user)) -> dict:
         if current_user["role"] not in allowed_roles:
             raise HTTPException(
@@ -163,11 +189,13 @@ def require_role(*allowed_roles: str):
                 detail=f"Role '{current_user['role']}' not allowed. Required: {allowed_roles}",
             )
         return current_user
+
     return checker
 
 
 def require_permission(permission: str):
     """Dependency factory: check specific permission."""
+
     def checker(current_user: dict = Depends(get_current_user)) -> dict:
         role_perms = ROLE_PERMISSIONS.get(current_user["role"], set())
         if permission not in role_perms:
@@ -176,4 +204,5 @@ def require_permission(permission: str):
                 detail=f"Permission '{permission}' required",
             )
         return current_user
+
     return checker

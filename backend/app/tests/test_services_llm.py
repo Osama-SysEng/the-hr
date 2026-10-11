@@ -1,5 +1,4 @@
 """اختبارات خدمة LLM"""
-import pytest
 
 
 def test_cv_extraction_schema():
@@ -17,7 +16,7 @@ def test_interview_evaluation():
     questions = [{"question": "التعريف عن نفسك", "weight": 10}]
     answers = [{"answer": "مرحباً، أنا مطور بخبرة 5 سنوات"}]
     scores = []
-    for q, a in zip(questions, answers):
+    for _q, a in zip(questions, answers, strict=False):
         word_count = len(a["answer"].split())
         score = min(100, word_count * 3 + 50)
         scores.append({"score": score, "max_score": 100, "feedback": "Okay"})

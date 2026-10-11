@@ -3,20 +3,15 @@ The H.R - Employees API Router
 Full CRUD for employees with filtering and search
 """
 
-from typing import Optional, List
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func
-from sqlalchemy.orm import selectinload
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.core.schemas import UserResponse
-from app.models.models import (
-    Employee, User, Tenant, Department, AttendanceRecord,
-    Payroll, LeaveRequest
-)
+from app.models.models import Department, Employee, Tenant
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/employees", tags=["Employees"])
 
@@ -24,111 +19,111 @@ router = APIRouter(prefix="/employees", tags=["Employees"])
 # -----------------------------------------------------------------------------
 # Schemas (inline for now - can move to schemas.py later)
 # -----------------------------------------------------------------------------
+from datetime import UTC, date, datetime
+
 from pydantic import BaseModel, Field
-from datetime import date, datetime, timezone
-from typing import Optional as Opt
 
 
 class EmployeeCreateRequest(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
-    father_name: Optional[str] = None
-    mother_name: Optional[str] = None
-    date_of_birth: Optional[date] = None
-    gender: Optional[str] = None
-    marital_status: Optional[str] = None
-    nationality: Optional[str] = None
-    religion: Optional[str] = None
-    blood_type: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    emergency_phone: Optional[str] = None
-    email: Optional[str] = None
-    social_insurance_number: Optional[str] = None
-    hire_date: Optional[date] = None
-    probation_end: Optional[date] = None
-    contract_start: Optional[date] = None
-    contract_end: Optional[date] = None
+    father_name: str | None = None
+    mother_name: str | None = None
+    date_of_birth: date | None = None
+    gender: str | None = None
+    marital_status: str | None = None
+    nationality: str | None = None
+    religion: str | None = None
+    blood_type: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    emergency_phone: str | None = None
+    email: str | None = None
+    social_insurance_number: str | None = None
+    hire_date: date | None = None
+    probation_end: date | None = None
+    contract_start: date | None = None
+    contract_end: date | None = None
     contract_type: str = "permanent"
-    department_id: Optional[str] = None
-    job_title: Optional[str] = None
+    department_id: str | None = None
+    job_title: str | None = None
     employment_type: str = "full_time"
-    salary_base: Optional[float] = None
-    notes: Optional[str] = None
+    salary_base: float | None = None
+    notes: str | None = None
 
 
 class EmployeeUpdateRequest(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    father_name: Optional[str] = None
-    mother_name: Optional[str] = None
-    date_of_birth: Optional[date] = None
-    gender: Optional[str] = None
-    marital_status: Optional[str] = None
-    nationality: Optional[str] = None
-    religion: Optional[str] = None
-    blood_type: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    emergency_phone: Optional[str] = None
-    email: Optional[str] = None
-    social_insurance_number: Optional[str] = None
-    contract_start: Optional[date] = None
-    contract_end: Optional[date] = None
-    contract_type: Optional[str] = None
-    department_id: Optional[str] = None
-    job_title: Optional[str] = None
-    employment_type: Optional[str] = None
-    salary_base: Optional[float] = None
-    notes: Optional[str] = None
-    status: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    father_name: str | None = None
+    mother_name: str | None = None
+    date_of_birth: date | None = None
+    gender: str | None = None
+    marital_status: str | None = None
+    nationality: str | None = None
+    religion: str | None = None
+    blood_type: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    emergency_phone: str | None = None
+    email: str | None = None
+    social_insurance_number: str | None = None
+    contract_start: date | None = None
+    contract_end: date | None = None
+    contract_type: str | None = None
+    department_id: str | None = None
+    job_title: str | None = None
+    employment_type: str | None = None
+    salary_base: float | None = None
+    notes: str | None = None
+    status: str | None = None
 
 
 class EmployeeResponse(BaseModel):
     id: str
     employee_number: str
-    national_id: Optional[str] = None
+    national_id: str | None = None
     first_name: str
     last_name: str
-    father_name: Optional[str] = None
-    mother_name: Optional[str] = None
+    father_name: str | None = None
+    mother_name: str | None = None
     full_name: str
-    date_of_birth: Optional[date] = None
-    gender: Optional[str] = None
-    marital_status: Optional[str] = None
-    nationality: Optional[str] = None
-    religion: Optional[str] = None
-    blood_type: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    emergency_phone: Optional[str] = None
-    email: Optional[str] = None
-    social_insurance_number: Optional[str] = None
-    fingerprint_template: Optional[str] = None
-    face_encoding: Optional[str] = None
-    hire_date: Optional[date] = None
-    probation_end: Optional[date] = None
-    contract_start: Optional[date] = None
-    contract_end: Optional[date] = None
+    date_of_birth: date | None = None
+    gender: str | None = None
+    marital_status: str | None = None
+    nationality: str | None = None
+    religion: str | None = None
+    blood_type: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    emergency_phone: str | None = None
+    email: str | None = None
+    social_insurance_number: str | None = None
+    fingerprint_template: str | None = None
+    face_encoding: str | None = None
+    hire_date: date | None = None
+    probation_end: date | None = None
+    contract_start: date | None = None
+    contract_end: date | None = None
     contract_type: str
     status: str
-    department_id: Optional[str] = None
-    department_name: Optional[str] = None
-    job_title: Optional[str] = None
+    department_id: str | None = None
+    department_name: str | None = None
+    job_title: str | None = None
     employment_type: str
-    salary_base: Optional[float] = None
+    salary_base: float | None = None
     currency: str
-    avatar_url: Optional[str] = None
-    notes: Optional[str] = None
+    avatar_url: str | None = None
+    notes: str | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
 
 
 class EmployeeListResponse(BaseModel):
-    employees: List[EmployeeResponse]
+    employees: list[EmployeeResponse]
     total: int
     page: int
     page_size: int
@@ -201,9 +196,9 @@ def _build_employee_response(emp: Employee) -> EmployeeResponse:
 async def list_employees(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = Query(None),
-    department_id: Optional[str] = Query(None),
-    search: Optional[str] = Query(None),
+    status: str | None = Query(None),
+    department_id: str | None = Query(None),
+    search: str | None = Query(None),
     sort_by: str = Query("employee_number"),
     sort_order: str = Query("asc"),
     db: AsyncSession = Depends(get_db),
@@ -275,12 +270,11 @@ async def get_employee(
     query = select(Employee).where(Employee.id == employee_id)
 
     # Non-admins can only see their own data
-    if role not in ("super_admin", "company_admin", "hr_manager"):
-        if current_user.get("employee_id") != employee_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="ليس لديك صلاحية لرؤية بيانات هذا الموظف",
-            )
+    if role not in ("super_admin", "company_admin", "hr_manager") and current_user.get("employee_id") != employee_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ليس لديك صلاحية لرؤية بيانات هذا الموظف",
+        )
 
     query = query.where(Employee.tenant_id == tenant_id)
     query = query.options(selectinload(Employee.department))
@@ -310,9 +304,7 @@ async def create_employee(
     tenant_id = current_user["tenant_id"]
 
     # Generate employee number
-    result = await db.execute(
-        select(func.max(Employee.employee_number)).where(Employee.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(func.max(Employee.employee_number)).where(Employee.tenant_id == tenant_id))
     max_num = result.scalar()
     max_num_int = int(max_num.split("-")[-1]) if max_num and "-" in max_num else 0
     employee_number = f"EMP-{_short_id(tenant_id)}-{str(max_num_int + 1).zfill(6).upper()}"
@@ -363,9 +355,7 @@ async def create_employee(
     await db.refresh(employee)
 
     # Load department
-    await db.execute(
-        select(Department).where(Department.id == employee.department_id)
-    )
+    await db.execute(select(Department).where(Department.id == employee.department_id))
 
     return _build_employee_response(employee)
 
@@ -419,9 +409,7 @@ async def delete_employee(
     """إتمام خدمة موظف (soft delete)"""
     tenant_id = current_user["tenant_id"]
 
-    result = await db.execute(
-        select(Employee).where(Employee.id == employee_id).where(Employee.tenant_id == tenant_id)
-    )
+    result = await db.execute(select(Employee).where(Employee.id == employee_id).where(Employee.tenant_id == tenant_id))
     employee = result.scalar_one_or_none()
 
     if not employee:
@@ -431,7 +419,7 @@ async def delete_employee(
         )
 
     employee.status = "terminated"
-    employee.terminated_at = datetime.now(timezone.utc)
+    employee.terminated_at = datetime.now(UTC)
     await db.commit()
 
 
@@ -440,7 +428,7 @@ async def delete_employee(
 # -----------------------------------------------------------------------------
 @router.post("/bulk", status_code=status.HTTP_201_CREATED)
 async def bulk_import_employees(
-    employees_data: List[EmployeeCreateRequest],
+    employees_data: list[EmployeeCreateRequest],
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager")),
 ):

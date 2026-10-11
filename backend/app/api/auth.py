@@ -3,32 +3,30 @@ The H.R - Auth API Router
 Login, Register, Token Refresh, Profile
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm, HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from datetime import UTC, datetime, timedelta
+
 from app.core.database import get_db
-from app.core.security import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    decode_access_token,
-    get_current_user,
-    require_role,
-)
 from app.core.schemas import (
-    LoginRequest,
-    RegisterRequest,
-    TokenResponse,
-    UserResponse,
-    RegisterResponse,
-    UserProfileResponse,
     ChangePasswordRequest,
     ForgotPasswordRequest,
+    RegisterRequest,
+    RegisterResponse,
+    TokenResponse,
+    UserProfileResponse,
+    UserResponse,
 )
-from app.models.models import User, Tenant, Employee, Department
+from app.core.security import (
+    create_access_token,
+    get_current_user,
+    hash_password,
+    require_role,
+    verify_password,
+)
+from app.models.models import Employee, Tenant, User
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordRequestForm
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -42,9 +40,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     """تسجيل الدخول - إرجاع JWT token"""
-    result = await db.execute(
-        select(User).where(User.email == form_data.username)
-    )
+    result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
 
     if not user:
@@ -66,7 +62,7 @@ async def login(
         )
 
     # Update login info
-    user.last_login = datetime.now(timezone.utc)
+    user.last_login = datetime.now(UTC)
     user.failed_attempts = 0
     await db.commit()
 
@@ -81,7 +77,7 @@ async def login(
 
     return TokenResponse(
         access_token=access_token,
-        token_type="bearer",
+        token_type="bearer",  # noqa: S106 -- OAuth2 token type identifier, not a password
         expires_in=1440 * 60,
         user=UserResponse.model_validate(user),
     )
@@ -137,7 +133,9 @@ async def register(
 
     employee = None
     if request.role == "employee" and (request.first_name or request.last_name):
-        employee_number = f"EMP-{str(tenant.id).replace('-', '')[:6].upper()}-{str(new_user.id).replace('-', '')[:6].upper()}"
+        employee_number = (
+            f"EMP-{str(tenant.id).replace('-', '')[:6].upper()}-{str(new_user.id).replace('-', '')[:6].upper()}"
+        )
         employee = Employee(
             id=new_user.id,
             tenant_id=tenant.id,
@@ -169,9 +167,15 @@ async def register(
 
     return RegisterResponse(
         access_token=access_token,
-        token_type="bearer",
+        token_type="bearer",  # noqa: S106 -- OAuth2 token type identifier, not a password
         user=UserResponse.model_validate(new_user),
-        employee=EmployeeResponse.model_validate(employee) if employee else None,
+        employee={
+            "id": str(employee.id),
+            "employee_number": employee.employee_number,
+            "department_id": str(employee.department_id) if employee.department_id else None,
+        }
+        if employee
+        else None,
     )
 
 
@@ -223,8 +227,8 @@ async def get_profile(
 # -----------------------------------------------------------------------------
 @router.put("/me", response_model=UserProfileResponse)
 async def update_profile(
-    full_name: Optional[str] = None,
-    phone: Optional[str] = None,
+    full_name: str | None = None,
+    phone: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -288,14 +292,6 @@ async def forgot_password(
     if not user:
         # Always return success to prevent email enumeration
         return {"message": "إذا كان البريد مسجلاً将是، ستصلك تعليمات إعادة التعيين"}
-
-    # Generate reset token (in production, store in DB with expiration)
-    reset_token = create_access_token(
-        subject=str(user.id),
-        tenant_id=str(user.tenant_id),
-        role=user.role,
-        expires_delta=timedelta(hours=1),
-    )
 
     # In production: send email with reset link
     # For now, return the token (should be sent via email)

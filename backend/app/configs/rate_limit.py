@@ -4,11 +4,7 @@
 والتكلفة المتغيرة (sliding window)
 """
 
-from datetime import timedelta
-from typing import Dict, Optional
-
-
-ROLE_LIMITS: Dict[str, Dict[str, int]] = {
+ROLE_LIMITS: dict[str, dict[str, int]] = {
     "super_admin": {"requests_per_minute": 1200, "requests_per_hour": 10000},
     "admin": {"requests_per_minute": 600, "requests_per_hour": 5000},
     "hr_manager": {"requests_per_minute": 400, "requests_per_hour": 3000},
@@ -17,7 +13,7 @@ ROLE_LIMITS: Dict[str, Dict[str, int]] = {
     "accountant": {"requests_per_minute": 250, "requests_per_hour": 1500},
 }
 
-ENDPOINT_LIMITS: Dict[str, Dict[str, int]] = {
+ENDPOINT_LIMITS: dict[str, dict[str, int]] = {
     "/api/auth/login": {"requests_per_minute": 10, "requests_per_hour": 50},
     "/api/auth/register": {"requests_per_minute": 5, "requests_per_hour": 20},
     "/api/attendance/face-recognition": {"requests_per_minute": 30, "requests_per_hour": 200},
@@ -25,7 +21,7 @@ ENDPOINT_LIMITS: Dict[str, Dict[str, int]] = {
     "/api/recruitment/ai-interview": {"requests_per_minute": 20, "requests_per_hour": 100},
 }
 
-GLOBAL_LIMITS: Dict[str, int] = {
+GLOBAL_LIMITS: dict[str, int] = {
     "requests_per_second": 200,
     "burst_limit": 50,
 }
@@ -45,14 +41,15 @@ class RateLimiter:
     يدعم التخزين في الذاكرة أو Redis
     """
 
-    def __init__(self, use_redis: bool = False):
+    def __init__(self, *, use_redis: bool = False):
         self.use_redis = use_redis
-        self._local_cache: Dict[str, list] = {}
-        self._abuse_tracker: Dict[str, dict] = {}
+        self._local_cache: dict[str, list] = {}
+        self._abuse_tracker: dict[str, dict] = {}
 
     def is_allowed(self, key: str, limit: int, window_seconds: int = 60) -> bool:
         """تحقق مما إذا كان الطلب مسموحًا به"""
         import time
+
         now = time.time()
         window_start = now - window_seconds
 
@@ -70,6 +67,7 @@ class RateLimiter:
     def get_remaining(self, key: str, limit: int, window_seconds: int = 60) -> int:
         """عدد الطلبات المتبقية"""
         import time
+
         now = time.time()
         window_start = now - window_seconds
 
@@ -82,8 +80,8 @@ class RateLimiter:
     def check_abuse(self, identifier: str) -> dict:
         """كشف النشاط المشبوه"""
         import time
+
         now = time.time()
-        minute_ago = now - 60
 
         if identifier not in self._abuse_tracker:
             self._abuse_tracker[identifier] = {
@@ -112,12 +110,8 @@ class RateLimitMiddleware:
         """التحقق من الحد الأقصى للطلب"""
         identifier = f"{role}:{request.client.host if request.client else 'unknown'}"
         limits = ROLE_LIMITS.get(role, ROLE_LIMITS["employee"])
-        allowed = self.limiter.is_allowed(
-            identifier, limits["requests_per_minute"], SLIDING_WINDOW_SECONDS
-        )
-        remaining = self.limiter.get_remaining(
-            identifier, limits["requests_per_minute"], SLIDING_WINDOW_SECONDS
-        )
+        allowed = self.limiter.is_allowed(identifier, limits["requests_per_minute"], SLIDING_WINDOW_SECONDS)
+        remaining = self.limiter.get_remaining(identifier, limits["requests_per_minute"], SLIDING_WINDOW_SECONDS)
 
         return {
             "allowed": allowed,

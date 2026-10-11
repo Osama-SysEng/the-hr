@@ -3,14 +3,17 @@ The H.R - Email Service
 Send emails for notifications, payslips, reports, invitations
 """
 
+import logging
 import os
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
-from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -18,8 +21,8 @@ class EmailMessage:
     to: str
     subject: str
     body: str
-    html_body: Optional[str] = None
-    attachments: Optional[List[str]] = None  # List of file paths
+    html_body: str | None = None
+    attachments: list[str] | None = None  # List of file paths
 
 
 class EmailService:
@@ -49,6 +52,7 @@ class EmailService:
             self.smtp_client.login(self.smtp_user, self.smtp_password)
             return True
         except Exception as e:
+            logger.exception("Email connection failed")
             print(f"Email connection failed: {e}")
             return False
 
@@ -58,7 +62,7 @@ class EmailService:
             try:
                 self.smtp_client.quit()
             except Exception:
-                pass
+                logger.debug("SMTP quit failed during disconnect", exc_info=True)
             self.smtp_client = None
 
     def send_email(
@@ -66,19 +70,19 @@ class EmailService:
         to: str,
         subject: str,
         body: str,
-        html_body: Optional[str] = None,
-        attachments: Optional[List[str]] = None,
+        html_body: str | None = None,
+        attachments: list[str] | None = None,
     ) -> bool:
         """
         Send an email.
-        
+
         Args:
             to: Recipient email address
             subject: Email subject
             body: Plain text body
             html_body: HTML body (optional)
             attachments: List of file paths to attach (optional)
-        
+
         Returns:
             True if sent successfully, False otherwise
         """
@@ -87,9 +91,8 @@ class EmailService:
             return False
 
         try:
-            if not self.smtp_client or not self.smtp_client.ehlo():
-                if not self.connect():
-                    return False
+            if (not self.smtp_client or not self.smtp_client.ehlo()) and not self.connect():
+                return False
 
             msg = MIMEMultipart("alternative")
             msg["From"] = self.from_address
@@ -106,7 +109,7 @@ class EmailService:
             # Attach files
             if attachments:
                 for attachment_path in attachments:
-                    if os.path.exists(attachment_path):
+                    if os.path.exists(attachment_path) and os.path.isfile(attachment_path):
                         with open(attachment_path, "rb") as f:
                             part = MIMEBase("application", "octet-stream")
                             part.set_payload(f.read())
@@ -121,6 +124,7 @@ class EmailService:
             return True
 
         except Exception as e:
+            logger.exception("Failed to send email to %s", to)
             print(f"Failed to send email to {to}: {e}")
             return False
 
@@ -131,11 +135,11 @@ class EmailService:
         payroll_month: int,
         payroll_year: int,
         net_salary: float,
-        payslip_path: Optional[str] = None,
+        payslip_path: str | None = None,
     ) -> bool:
         """Send payslip to employee."""
         subject = f"كشف الراتب - {payroll_month}/{payroll_year}"
-        
+
         body = f"""عزيزي {employee_name},
 
 تم إعداد كشف راتبك لشهر {payroll_month}/{payroll_year}.
@@ -249,7 +253,7 @@ class EmailService:
         start_date: str,
         end_date: str,
         status: str,
-        approver_name: Optional[str] = None,
+        approver_name: str | None = None,
     ) -> bool:
         """Send leave request status to employee."""
         subject = f"حالة طلب الإجازة - {leave_type}"
@@ -262,7 +266,7 @@ class EmailService:
 نوع الإجازة: {leave_type}
 البداية: {start_date}
 النهاية: {end_date}
-تمت الموافقة من: {approver_name or 'فريق HR'}
+تمت الموافقة من: {approver_name or "فريق HR"}
 
 مع خالص التحية،
 فريق الموارد البشرية - The H.R
@@ -275,7 +279,7 @@ class EmailService:
 نوع الإجازة: {leave_type}
 البداية: {start_date}
 النهاية: {end_date}
-السبب: {approver_name or 'لم يتم تحديده'}
+السبب: {approver_name or "لم يتم تحديده"}
 
 يمكنك请求 إعادة النظر إذا كنت ترغب.
 
@@ -298,11 +302,11 @@ class EmailService:
 
     def send_bulk_email(
         self,
-        recipients: List[Dict[str, str]],
+        recipients: list[dict[str, str]],
         subject: str,
         body_template: str,
-        html_template: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        html_template: str | None = None,
+    ) -> dict[str, Any]:
         """
         Send bulk email to multiple recipients.
         recipients = [{"email": "...", "name": "...", "variables": {...}}]

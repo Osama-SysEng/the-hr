@@ -1,5 +1,4 @@
 """اختبارات خدمة الرسائل النصية"""
-import pytest
 
 
 def test_sms_template():

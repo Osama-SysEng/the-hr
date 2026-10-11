@@ -3,21 +3,20 @@ The H.R - Payroll API Router
 Payroll calculation, payslips, salary history
 """
 
-from datetime import date, datetime, timedelta, timezone
-from typing import Optional, List
+import logging
+import uuid
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func, text
-from sqlalchemy.orm import selectinload
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import (
-    Payroll, Employee, Tenant, AttendanceRecord, Department
-)
-import uuid
+from app.models.models import AttendanceRecord, Department, Employee, Payroll
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payroll", tags=["Payroll"])
 
@@ -25,10 +24,7 @@ router = APIRouter(prefix="/payroll", tags=["Payroll"])
 # -----------------------------------------------------------------------------
 # Schemas
 # -----------------------------------------------------------------------------
-from pydantic import BaseModel, Field
-from datetime import date, datetime
-from typing import Optional
-from decimal import Decimal as PyDecimal
+from pydantic import BaseModel
 
 
 class PayrollCalculationRequest(BaseModel):
@@ -45,7 +41,7 @@ class PayrollRecordResponse(BaseModel):
     employee_id: str
     employee_number: str
     employee_name: str
-    department_name: Optional[str] = None
+    department_name: str | None = None
     payroll_month: int
     payroll_year: int
     period_start: date
@@ -72,8 +68,8 @@ class PayrollRecordResponse(BaseModel):
     net_salary: float
     status: str
     is_sent_to_employee: bool
-    payslip_url: Optional[str] = None
-    calculated_at: Optional[datetime] = None
+    payslip_url: str | None = None
+    calculated_at: datetime | None = None
     created_at: datetime
 
     class Config:
@@ -81,7 +77,7 @@ class PayrollRecordResponse(BaseModel):
 
 
 class PayrollListResponse(BaseModel):
-    payrolls: List[PayrollRecordResponse]
+    payrolls: list[PayrollRecordResponse]
     total: int
     page: int
     page_size: int
@@ -102,7 +98,7 @@ class PayslipResponse(BaseModel):
     tax: dict
     net_salary: float
     calculated_at: datetime
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class PayrollReportRequest(BaseModel):
@@ -110,7 +106,7 @@ class PayrollReportRequest(BaseModel):
     start_year: int
     end_month: int
     end_year: int
-    department_id: Optional[str] = None
+    department_id: str | None = None
 
 
 class PayrollReportResponse(BaseModel):
@@ -119,8 +115,8 @@ class PayrollReportResponse(BaseModel):
     total_employees: int
     total_payroll_cost: float
     average_salary: float
-    by_department: List[dict]
-    by_month: List[dict]
+    by_department: list[dict]
+    by_month: list[dict]
 
 
 # -----------------------------------------------------------------------------
@@ -190,7 +186,9 @@ def calculate_income_tax(annual_income: float) -> float:
 # -----------------------------------------------------------------------------
 # Helper: Build payroll response
 # -----------------------------------------------------------------------------
-def _build_payroll_response(payroll: Payroll, employee: Employee, department: Optional[Department]) -> PayrollRecordResponse:
+def _build_payroll_response(
+    payroll: Payroll, employee: Employee, department: Department | None
+) -> PayrollRecordResponse:
     return PayrollRecordResponse(
         id=payroll.id,
         employee_id=payroll.employee_id,
@@ -275,17 +273,16 @@ async def calculate_payroll(
         )
 
     # Base salary
-    base_salary = employee.salary_base or Decimal("5000")
+    base_salary = employee.salary_base or Decimal(5000)
 
     # Allowances
-    housing_allowance = Decimal("0")
-    transport_allowance = Decimal("0")
-    meal_allowance = Decimal("0")
-    phone_allowance = Decimal("0")
-    other_allowances = Decimal("0")
+    housing_allowance = Decimal(0)
+    transport_allowance = Decimal(0)
+    meal_allowance = Decimal(0)
+    phone_allowance = Decimal(0)
+    other_allowances = Decimal(0)
 
     # Get attendance for the period
-    attendance_summaries = {}
     if request.calculate_attendance:
         start_date = date(request.payroll_year, request.payroll_month, 1)
         if request.payroll_month == 12:
@@ -312,7 +309,6 @@ async def calculate_payroll(
         )
         attendance_records = att_result.scalars().all()
 
-        total_days = 0
         present_days = 0
         absent_days = 0
         late_days = 0
@@ -321,10 +317,9 @@ async def calculate_payroll(
         total_late_minutes = 0
 
         for att in attendance_records:
-            total_days += 1
             if att.status == "present":
                 present_days += 1
-                total_hours_worked += (att.total_hours or 0)
+                total_hours_worked += att.total_hours or 0
                 total_overtime_minutes += att.overtime_minutes or 0
                 total_late_minutes += att.late_minutes or 0
             elif att.status == "late":
@@ -352,22 +347,22 @@ async def calculate_payroll(
 
     # Total earnings
     total_earnings = (
-        base_salary +
-        housing_allowance +
-        transport_allowance +
-        meal_allowance +
-        phone_allowance +
-        other_allowances +
-        overtime_pay
+        base_salary
+        + housing_allowance
+        + transport_allowance
+        + meal_allowance
+        + phone_allowance
+        + other_allowances
+        + overtime_pay
     )
 
     # Total deductions
     total_deductions = (
-        absence_deduction +
-        late_deduction +
-        Decimal("0")  # violation_deduction
-        + Decimal("0")  # loan_repayment - would come from EmployeeLoan
-        + Decimal("0")  # other_deductions
+        absence_deduction
+        + late_deduction
+        + Decimal(0)  # violation_deduction
+        + Decimal(0)  # loan_repayment - would come from EmployeeLoan
+        + Decimal(0)  # other_deductions
     )
 
     # Social insurance
@@ -409,9 +404,9 @@ async def calculate_payroll(
         total_earnings=total_earnings,
         absence_deduction=absence_deduction,
         late_deduction=late_deduction,
-        violation_deduction=Decimal("0"),
-        loan_repayment=Decimal("0"),
-        other_deductions=Decimal("0"),
+        violation_deduction=Decimal(0),
+        loan_repayment=Decimal(0),
+        other_deductions=Decimal(0),
         total_deductions=total_deductions,
         social_insurance_employee=Decimal(str(employee_insurance)),
         social_insurance_employer=Decimal(str(employer_insurance)),
@@ -420,7 +415,7 @@ async def calculate_payroll(
         income_tax=income_tax,
         net_salary=net_salary,
         status="calculated",
-        calculated_at=datetime.now(timezone.utc),
+        calculated_at=datetime.now(UTC),
     )
     db.add(payroll)
     await db.commit()
@@ -443,17 +438,18 @@ async def get_payroll(
     role = current_user["role"]
     employee_id = current_user.get("employee_id")
 
-    query = select(Payroll).where(
-        and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)
-    ).options(
-        selectinload(Payroll.employee),
-        selectinload(Payroll.employee).selectinload(Employee.department),
+    query = (
+        select(Payroll)
+        .where(and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id))
+        .options(
+            selectinload(Payroll.employee),
+            selectinload(Payroll.employee).selectinload(Employee.department),
+        )
     )
 
     # Non-admins can only see their own payroll
-    if role not in ("super_admin", "company_admin", "hr_manager", "accountant"):
-        if employee_id:
-            query = query.where(Payroll.employee_id == employee_id)
+    if role not in ("super_admin", "company_admin", "hr_manager", "accountant") and employee_id:
+        query = query.where(Payroll.employee_id == employee_id)
 
     result = await db.execute(query)
     payroll = result.scalar_one_or_none()
@@ -474,10 +470,10 @@ async def get_payroll(
 async def list_payrolls(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    employee_id: Optional[str] = Query(None),
-    payroll_month: Optional[int] = Query(None),
-    payroll_year: Optional[int] = Query(None),
-    status: Optional[str] = Query(None),
+    employee_id: str | None = Query(None),
+    payroll_month: int | None = Query(None),
+    payroll_year: int | None = Query(None),
+    status: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -489,9 +485,8 @@ async def list_payrolls(
     query = select(Payroll).where(Payroll.tenant_id == tenant_id)
 
     # Non-admins only see their own
-    if role not in ("super_admin", "company_admin", "hr_manager", "accountant"):
-        if employee_id_filter:
-            query = query.where(Payroll.employee_id == employee_id_filter)
+    if role not in ("super_admin", "company_admin", "hr_manager", "accountant") and employee_id_filter:
+        query = query.where(Payroll.employee_id == employee_id_filter)
 
     if employee_id:
         query = query.where(Payroll.employee_id == employee_id)
@@ -540,9 +535,9 @@ async def approve_payroll(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(Payroll).where(
-            and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)
-        ).options(selectinload(Payroll.employee))
+        select(Payroll)
+        .where(and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id))
+        .options(selectinload(Payroll.employee))
     )
     payroll = result.scalar_one_or_none()
 
@@ -570,18 +565,14 @@ async def approve_payroll(
 @router.post("/{payroll_id}/pay")
 async def mark_as_paid(
     payroll_id: str,
-    bank_reference: Optional[str] = None,
+    bank_reference: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "accountant")),
 ):
     """تسجيل دفع الراتب"""
     tenant_id = current_user["tenant_id"]
 
-    result = await db.execute(
-        select(Payroll).where(
-            and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)
-        )
-    )
+    result = await db.execute(select(Payroll).where(and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)))
     payroll = result.scalar_one_or_none()
 
     if not payroll:
@@ -621,11 +612,7 @@ async def send_payslip(
     """إرسال كشف الراتب للموظف"""
     tenant_id = current_user["tenant_id"]
 
-    result = await db.execute(
-        select(Payroll).where(
-            and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)
-        )
-    )
+    result = await db.execute(select(Payroll).where(and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)))
     payroll = result.scalar_one_or_none()
 
     if not payroll:
@@ -657,14 +644,15 @@ async def get_payslip_data(
     role = current_user["role"]
     employee_id = current_user.get("employee_id")
 
-    query = select(Payroll).where(
-        and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id)
-    ).options(selectinload(Payroll.employee))
+    query = (
+        select(Payroll)
+        .where(and_(Payroll.id == payroll_id, Payroll.tenant_id == tenant_id))
+        .options(selectinload(Payroll.employee))
+    )
 
     # Non-admins only see their own
-    if role not in ("super_admin", "company_admin", "hr_manager", "accountant"):
-        if employee_id:
-            query = query.where(Payroll.employee_id == employee_id)
+    if role not in ("super_admin", "company_admin", "hr_manager", "accountant") and employee_id:
+        query = query.where(Payroll.employee_id == employee_id)
 
     result = await db.execute(query)
     payroll = result.scalar_one_or_none()
@@ -756,7 +744,7 @@ async def calculate_all_payrolls(
 
             # Calculate using the same logic as calculate_payroll
             # (simplified - would need to call the calculate logic)
-            base_salary = employee.salary_base or Decimal("5000")
+            base_salary = employee.salary_base or Decimal(5000)
 
             payroll = Payroll(
                 id=uuid.uuid4().hex,
@@ -771,18 +759,21 @@ async def calculate_all_payrolls(
                 transport_allowance=base_salary * Decimal("0.10"),
                 meal_allowance=base_salary * Decimal("0.05"),
                 total_earnings=base_salary * Decimal("1.40"),
-                total_deductions=Decimal("0"),
+                total_deductions=Decimal(0),
                 social_insurance_employee=Decimal(str(round(base_salary * 0.11, 2))),
                 social_insurance_employer=Decimal(str(round(base_salary * 0.1875, 2))),
                 health_insurance=base_salary * Decimal("0.01"),
-                net_salary=base_salary * Decimal("1.40") - base_salary * Decimal("0.11") - base_salary * Decimal("0.01"),
+                net_salary=base_salary * Decimal("1.40")
+                - base_salary * Decimal("0.11")
+                - base_salary * Decimal("0.01"),
                 status="calculated",
-                calculated_at=datetime.now(timezone.utc),
+                calculated_at=datetime.now(UTC),
             )
             db.add(payroll)
             created.append(payroll)
 
         except Exception as exc:
+            logger.exception("Payroll calculation failed for employee %s", employee.id)
             failed.append({"employee_id": str(employee.id), "error": str(exc)})
             continue
 
@@ -807,8 +798,8 @@ async def payroll_statistics(
     tenant_id = current_user["tenant_id"]
 
     # Total payroll for current month
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    current_month = datetime.now(UTC).month
+    current_year = datetime.now(UTC).year
 
     result = await db.execute(
         select(

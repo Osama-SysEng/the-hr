@@ -3,16 +3,12 @@ The H.R - Dashboard & Settings API
 Company settings, dashboard widgets
 """
 
-from datetime import datetime, timezone
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import Tenant, Employee, User, Department
-
+from app.models.models import Department, Employee, Tenant
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/settings", tags=["Company Settings"])
 
@@ -60,11 +56,11 @@ async def get_company_settings(
 
 @router.put("/company")
 async def update_company_settings(
-    name: Optional[str] = None,
-    phone: Optional[str] = None,
-    address: Optional[str] = None,
-    logo_url: Optional[str] = None,
-    primary_color: Optional[str] = None,
+    name: str | None = None,
+    phone: str | None = None,
+    address: str | None = None,
+    logo_url: str | None = None,
+    primary_color: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin")),
 ):
@@ -114,7 +110,7 @@ async def update_company_settings(
 # -----------------------------------------------------------------------------
 @router.get("/employees/simple-list")
 async def get_simple_employee_list(
-    search: Optional[str] = None,
+    search: str | None = None,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -164,9 +160,7 @@ async def list_departments(
     """قائمة الأقسام"""
     tenant_id = current_user["tenant_id"]
 
-    result = await db.execute(
-        select(Department).where(Department.tenant_id == tenant_id).order_by(Department.name)
-    )
+    result = await db.execute(select(Department).where(Department.tenant_id == tenant_id).order_by(Department.name))
     departments = result.scalars().all()
 
     return {

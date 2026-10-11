@@ -1,5 +1,4 @@
 """اختبارات خدمة البريد الإلكتروني"""
-import pytest
 
 
 def test_email_connection():

@@ -16,3 +16,14 @@ addopts = "-v --tb=short"
 [tool.ruff]
 target-version = "py312"
 line-length = 120
+
+[tool.ruff.lint]
+# B008 (function call in defaults) is the documented FastAPI Depends() pattern.
+# DTZ011 flags date.today(): correct here — compared against naive DATE columns,
+# while naive datetimes stay guarded by DTZ001/DTZ005 (kept enabled).
+ignore = ["DTZ011", "B008"]
+extend-select = ["B", "BLE", "DTZ", "SIM", "S", "ASYNC", "I", "UP", "EXE", "FBT"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/**/tests/*.py" = ["S101"]
+"backend/app/**/tests/*.py" = ["S101"]

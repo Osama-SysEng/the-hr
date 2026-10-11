@@ -2,24 +2,17 @@
 The H.R - Inventory & Supply Chain API Routers
 """
 
-from datetime import date, datetime, timezone
-from typing import Optional, List
+import uuid
+from datetime import UTC, date, datetime
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func
-from sqlalchemy.orm import selectinload
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import (
-    InventoryProduct, StockMovement, Supplier, PurchaseOrder, PurchaseOrderItem,
-    Tenant, Employee
-)
-import uuid
-import os
-import shutil
-
+from app.models.models import InventoryProduct, PurchaseOrder, PurchaseOrderItem, StockMovement, Supplier
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import Integer, and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/inventory", tags=["Inventory & Supply Chain"])
 
@@ -28,58 +21,56 @@ router = APIRouter(prefix="/inventory", tags=["Inventory & Supply Chain"])
 # Schemas
 # -----------------------------------------------------------------------------
 from pydantic import BaseModel, Field
-from datetime import date, datetime
-from typing import Optional
 
 
 class ProductCreateRequest(BaseModel):
     sku: str = Field(..., min_length=1, max_length=100)
-    barcode: Optional[str] = None
+    barcode: str | None = None
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    category: Optional[str] = None
+    description: str | None = None
+    category: str | None = None
     unit: str = "piece"
-    purchase_price: Optional[float] = None
-    selling_price: Optional[float] = None
+    purchase_price: float | None = None
+    selling_price: float | None = None
     current_stock: float = 0
     minimum_stock: float = 0
-    maximum_stock: Optional[float] = None
-    warehouse_location: Optional[str] = None
+    maximum_stock: float | None = None
+    warehouse_location: str | None = None
 
 
 class ProductUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[str] = None
-    unit: Optional[str] = None
-    purchase_price: Optional[float] = None
-    selling_price: Optional[float] = None
-    current_stock: Optional[float] = None
-    minimum_stock: Optional[float] = None
-    maximum_stock: Optional[float] = None
-    warehouse_location: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    category: str | None = None
+    unit: str | None = None
+    purchase_price: float | None = None
+    selling_price: float | None = None
+    current_stock: float | None = None
+    minimum_stock: float | None = None
+    maximum_stock: float | None = None
+    warehouse_location: str | None = None
+    is_active: bool | None = None
 
 
 class ProductResponse(BaseModel):
     id: str
     sku: str
-    barcode: Optional[str] = None
+    barcode: str | None = None
     name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
+    description: str | None = None
+    category: str | None = None
     unit: str
-    purchase_price: Optional[float] = None
-    selling_price: Optional[float] = None
+    purchase_price: float | None = None
+    selling_price: float | None = None
     cost_method: str
     current_stock: float
     minimum_stock: float
-    maximum_stock: Optional[float] = None
-    warehouse_location: Optional[str] = None
+    maximum_stock: float | None = None
+    warehouse_location: str | None = None
     stock_status: str  # ok, low, out_of_stock, overstock
     is_active: bool
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -89,12 +80,12 @@ class StockMovementRequest(BaseModel):
     product_id: str
     movement_type: str  # in, out, transfer, adjustment
     quantity: float
-    reference_type: Optional[str] = None
-    reference_id: Optional[str] = None
-    from_location: Optional[str] = None
-    to_location: Optional[str] = None
-    cost_per_unit: Optional[float] = None
-    notes: Optional[str] = None
+    reference_type: str | None = None
+    reference_id: str | None = None
+    from_location: str | None = None
+    to_location: str | None = None
+    cost_per_unit: float | None = None
+    notes: str | None = None
 
 
 class StockMovementResponse(BaseModel):
@@ -104,14 +95,14 @@ class StockMovementResponse(BaseModel):
     product_sku: str
     movement_type: str
     quantity: float
-    reference_type: Optional[str] = None
-    reference_id: Optional[str] = None
-    from_location: Optional[str] = None
-    to_location: Optional[str] = None
-    cost_per_unit: Optional[float] = None
-    total_cost: Optional[float] = None
-    created_by: Optional[str] = None
-    notes: Optional[str] = None
+    reference_type: str | None = None
+    reference_id: str | None = None
+    from_location: str | None = None
+    to_location: str | None = None
+    cost_per_unit: float | None = None
+    total_cost: float | None = None
+    created_by: str | None = None
+    notes: str | None = None
     created_at: datetime
 
     class Config:
@@ -120,44 +111,44 @@ class StockMovementResponse(BaseModel):
 
 class SupplierCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    contact_person: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    tax_id: Optional[str] = None
+    contact_person: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    tax_id: str | None = None
     payment_terms: str = "Net 30"
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class SupplierUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    contact_person: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    tax_id: Optional[str] = None
-    payment_terms: Optional[str] = None
-    rating: Optional[float] = None
-    on_time_delivery_rate: Optional[float] = None
-    quality_rejection_rate: Optional[float] = None
-    is_blacklisted: Optional[bool] = None
-    notes: Optional[str] = None
+    name: str | None = None
+    contact_person: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    tax_id: str | None = None
+    payment_terms: str | None = None
+    rating: float | None = None
+    on_time_delivery_rate: float | None = None
+    quality_rejection_rate: float | None = None
+    is_blacklisted: bool | None = None
+    notes: str | None = None
 
 
 class SupplierResponse(BaseModel):
     id: str
     name: str
-    contact_person: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    tax_id: Optional[str] = None
+    contact_person: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    tax_id: str | None = None
     payment_terms: str
     rating: float
     on_time_delivery_rate: float
     quality_rejection_rate: float
     is_blacklisted: bool
-    notes: Optional[str] = None
+    notes: str | None = None
     created_at: datetime
 
     class Config:
@@ -165,30 +156,30 @@ class SupplierResponse(BaseModel):
 
 
 class PurchaseOrderCreateRequest(BaseModel):
-    supplier_id: Optional[str] = None
+    supplier_id: str | None = None
     request_date: date
-    delivery_date: Optional[date] = None
-    items: List[dict]  # [{product_id, description, quantity, unit_price}]
-    notes: Optional[str] = None
+    delivery_date: date | None = None
+    items: list[dict]  # [{product_id, description, quantity, unit_price}]
+    notes: str | None = None
 
 
 class PurchaseOrderResponse(BaseModel):
     id: str
     po_number: str
-    supplier_id: Optional[str] = None
-    supplier_name: Optional[str] = None
+    supplier_id: str | None = None
+    supplier_name: str | None = None
     status: str
     request_date: date
-    delivery_date: Optional[date] = None
+    delivery_date: date | None = None
     items_count: int
     total_amount: float
     tax_amount: float
     grand_total: float
-    notes: Optional[str] = None
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
+    notes: str | None = None
+    approved_by: str | None = None
+    approved_at: datetime | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -197,18 +188,18 @@ class PurchaseOrderResponse(BaseModel):
 class PurchaseOrderDetailResponse(BaseModel):
     id: str
     po_number: str
-    supplier: Optional[dict] = None
+    supplier: dict | None = None
     status: str
     request_date: date
-    delivery_date: Optional[date] = None
-    items: List[dict]
+    delivery_date: date | None = None
+    items: list[dict]
     total_amount: float
     tax_amount: float
     grand_total: float
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
-    status_history: List[dict] = []
-    notes: Optional[str] = None
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    status_history: list[dict] = []
+    notes: str | None = None
 
 
 class InventoryReportResponse(BaseModel):
@@ -218,7 +209,7 @@ class InventoryReportResponse(BaseModel):
     out_of_stock: int
     low_stock: int
     overstock: int
-    products: List[ProductResponse]
+    products: list[ProductResponse]
 
 
 # -----------------------------------------------------------------------------
@@ -260,11 +251,11 @@ def _build_product_response(product: InventoryProduct) -> ProductResponse:
 # -----------------------------------------------------------------------------
 # Products CRUD
 # -----------------------------------------------------------------------------
-@router.get("/products", response_model=List[ProductResponse])
+@router.get("/products", response_model=list[ProductResponse])
 async def list_products(
-    category: Optional[str] = Query(None),
+    category: str | None = Query(None),
     status: str = Query("all"),  # all, active, inactive, low_stock, out_of_stock
-    search: Optional[str] = Query(None),
+    search: str | None = Query(None),
     limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -318,8 +309,7 @@ async def get_product(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(InventoryProduct)
-        .where(and_(InventoryProduct.id == product_id, InventoryProduct.tenant_id == tenant_id))
+        select(InventoryProduct).where(and_(InventoryProduct.id == product_id, InventoryProduct.tenant_id == tenant_id))
     )
     product = result.scalar_one_or_none()
 
@@ -384,9 +374,7 @@ async def update_product(
     tenant_id = current_user["tenant_id"]
 
     result = await db.execute(
-        select(InventoryProduct).where(
-            and_(InventoryProduct.id == product_id, InventoryProduct.tenant_id == tenant_id)
-        )
+        select(InventoryProduct).where(and_(InventoryProduct.id == product_id, InventoryProduct.tenant_id == tenant_id))
     )
     product = result.scalar_one_or_none()
 
@@ -493,9 +481,9 @@ async def create_stock_movement(
 # -----------------------------------------------------------------------------
 # Suppliers
 # -----------------------------------------------------------------------------
-@router.get("/suppliers", response_model=List[SupplierResponse])
+@router.get("/suppliers", response_model=list[SupplierResponse])
 async def list_suppliers(
-    search: Optional[str] = Query(None),
+    search: str | None = Query(None),
     limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -555,24 +543,28 @@ async def create_purchase_order(
     tenant_id = current_user["tenant_id"]
 
     # Generate PO number
-    po_number = f"PO-{str(tenant_id).replace('-', '')[:6]}-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+    po_number = (
+        f"PO-{str(tenant_id).replace('-', '')[:6]}-{date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+    )
 
     # Calculate totals
-    total_amount = Decimal("0")
+    total_amount = Decimal(0)
     items_data = []
     for item in request.items:
         quantity = Decimal(str(item.get("quantity", 0)))
         unit_price = Decimal(str(item.get("unit_price", 0)))
         total = quantity * unit_price
         total_amount += total
-        items_data.append({
-            "product_id": item.get("product_id"),
-            "description": item.get("description"),
-            "quantity": quantity,
-            "unit_price": unit_price,
-            "total_price": total,
-            "received_quantity": Decimal("0"),
-        })
+        items_data.append(
+            {
+                "product_id": item.get("product_id"),
+                "description": item.get("description"),
+                "quantity": quantity,
+                "unit_price": unit_price,
+                "total_price": total,
+                "received_quantity": Decimal(0),
+            }
+        )
 
     tax_amount = total_amount * Decimal("0.14")  # VAT assumed 14%
     grand_total = total_amount + tax_amount
@@ -589,7 +581,7 @@ async def create_purchase_order(
         tax_amount=tax_amount,
         grand_total=grand_total,
         notes=request.notes,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(po)
     await db.flush()
@@ -604,9 +596,7 @@ async def create_purchase_order(
 
     # Load supplier name
     if po.supplier_id:
-        supp_result = await db.execute(
-            select(Supplier.name).where(Supplier.id == po.supplier_id)
-        )
+        supp_result = await db.execute(select(Supplier.name).where(Supplier.id == po.supplier_id))
         supplier_name = supp_result.scalar()
     else:
         supplier_name = None
@@ -628,9 +618,9 @@ async def create_purchase_order(
     )
 
 
-@router.get("/purchase-orders", response_model=List[PurchaseOrderResponse])
+@router.get("/purchase-orders", response_model=list[PurchaseOrderResponse])
 async def list_purchase_orders(
-    status: Optional[str] = Query(None),
+    status: str | None = Query(None),
     limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -650,35 +640,33 @@ async def list_purchase_orders(
     response = []
     for order in orders:
         orders_items_result = await db.execute(
-            select(func.count(PurchaseOrderItem.id)).where(
-                PurchaseOrderItem.po_id == order.id
-            )
+            select(func.count(PurchaseOrderItem.id)).where(PurchaseOrderItem.po_id == order.id)
         )
         items_count = orders_items_result.scalar() or 0
 
-        supplier_result = await db.execute(
-            select(Supplier.name).where(Supplier.id == order.supplier_id)
-        )
+        supplier_result = await db.execute(select(Supplier.name).where(Supplier.id == order.supplier_id))
         supplier_name = supplier_result.scalar()
 
-        response.append(PurchaseOrderResponse(
-            id=order.id,
-            po_number=order.po_number,
-            supplier_id=order.supplier_id,
-            supplier_name=supplier_name,
-            status=order.status,
-            request_date=order.request_date,
-            delivery_date=order.delivery_date,
-            items_count=items_count,
-            total_amount=float(order.total_amount),
-            tax_amount=float(order.tax_amount),
-            grand_total=float(order.grand_total),
-            notes=order.notes,
-            approved_by=order.approved_by,
-            approved_at=order.approved_at,
-            created_at=order.created_at,
-            updated_at=order.updated_at,
-        ))
+        response.append(
+            PurchaseOrderResponse(
+                id=order.id,
+                po_number=order.po_number,
+                supplier_id=order.supplier_id,
+                supplier_name=supplier_name,
+                status=order.status,
+                request_date=order.request_date,
+                delivery_date=order.delivery_date,
+                items_count=items_count,
+                total_amount=float(order.total_amount),
+                tax_amount=float(order.tax_amount),
+                grand_total=float(order.grand_total),
+                notes=order.notes,
+                approved_by=order.approved_by,
+                approved_at=order.approved_at,
+                created_at=order.created_at,
+                updated_at=order.updated_at,
+            )
+        )
 
     return response
 
@@ -718,16 +706,18 @@ async def get_purchase_order_detail(
                 "sku": item.product.sku,
                 "current_stock": float(item.product.current_stock),
             }
-        items_data.append({
-            "id": item.id,
-            "product_id": item.product_id,
-            "product": product_data,
-            "description": item.description,
-            "quantity": float(item.quantity),
-            "unit_price": float(item.unit_price),
-            "total_price": float(item.total_price),
-            "received_quantity": float(item.received_quantity),
-        })
+        items_data.append(
+            {
+                "id": item.id,
+                "product_id": item.product_id,
+                "product": product_data,
+                "description": item.description,
+                "quantity": float(item.quantity),
+                "unit_price": float(item.unit_price),
+                "total_price": float(item.total_price),
+                "received_quantity": float(item.received_quantity),
+            }
+        )
 
     supplier_data = None
     if order.supplier:
@@ -768,33 +758,34 @@ async def inventory_summary_report(
             func.count(InventoryProduct.id).label("total_products"),
             func.count(InventoryProduct.sku).label("total_skus"),
             func.sum(InventoryProduct.current_stock * InventoryProduct.purchase_price).label("total_value"),
-            func.sum(func.cast(
-                and_(InventoryProduct.current_stock <= 0, InventoryProduct.is_active == True),
-                Integer
-            )).label("out_of_stock"),
-            func.sum(func.cast(
-                and_(
-                    InventoryProduct.current_stock > 0,
-                    InventoryProduct.current_stock <= InventoryProduct.minimum_stock,
-                    InventoryProduct.is_active == True,
-                ),
-                Integer
-            )).label("low_stock"),
-            func.sum(func.cast(
-                and_(
-                    InventoryProduct.current_stock >= InventoryProduct.maximum_stock,
-                    InventoryProduct.is_active == True,
-                ),
-                Integer
-            )).label("overstock"),
+            func.sum(
+                func.cast(and_(InventoryProduct.current_stock <= 0, InventoryProduct.is_active == True), Integer)
+            ).label("out_of_stock"),
+            func.sum(
+                func.cast(
+                    and_(
+                        InventoryProduct.current_stock > 0,
+                        InventoryProduct.current_stock <= InventoryProduct.minimum_stock,
+                        InventoryProduct.is_active == True,
+                    ),
+                    Integer,
+                )
+            ).label("low_stock"),
+            func.sum(
+                func.cast(
+                    and_(
+                        InventoryProduct.current_stock >= InventoryProduct.maximum_stock,
+                        InventoryProduct.is_active == True,
+                    ),
+                    Integer,
+                )
+            ).label("overstock"),
         ).where(InventoryProduct.tenant_id == tenant_id)
     )
     stats = result.one()
 
     # Get products (bounded page of the item breakdown; aggregates cover the full set)
-    prod_result = await db.execute(
-        select(InventoryProduct).where(InventoryProduct.tenant_id == tenant_id).limit(limit)
-    )
+    prod_result = await db.execute(select(InventoryProduct).where(InventoryProduct.tenant_id == tenant_id).limit(limit))
     products = prod_result.scalars().all()
 
     return InventoryReportResponse(

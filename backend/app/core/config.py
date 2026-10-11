@@ -4,6 +4,7 @@ The H.R - Configuration Settings
 """
 
 from functools import lru_cache
+
 from pydantic_settings import BaseSettings
 
 
@@ -20,8 +21,8 @@ class Settings(BaseSettings):
     # Redis (for Celery + caching)
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # JWT
-    SECRET_KEY: str = "your-super-secret-key-change-in-production-thehr"
+    # JWT (override via environment; default is a dev placeholder, not a real secret)
+    SECRET_KEY: str = "your-super-secret-key-change-in-production-thehr"  # noqa: S105
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 

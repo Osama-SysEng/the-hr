@@ -3,20 +3,24 @@ The H.R - Dashboard API Router
 Combined dashboard endpoints for different roles
 """
 
-from datetime import date, datetime, timezone, timedelta
-from typing import Optional
-from fastapi import APIRouter, Depends, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
-from sqlalchemy.orm import selectinload
+from datetime import date
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
 from app.models.models import (
-    AttendanceRecord, Employee, Payroll, Tenant, Department,
-    LeaveRequest, Candidate, JobPosting, InventoryProduct
+    AttendanceRecord,
+    Candidate,
+    Employee,
+    EmployeeLoan,
+    InventoryProduct,
+    JobPosting,
+    LeaveRequest,
+    Payroll,
 )
-
+from fastapi import APIRouter, Depends
+from sqlalchemy import Integer, and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 dashboard_router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -79,15 +83,11 @@ async def admin_dashboard(
 
     # Recruitment
     jobs_result = await db.execute(
-        select(func.count(JobPosting.id)).where(
-            and_(JobPosting.tenant_id == tenant_id, JobPosting.is_active == True)
-        )
+        select(func.count(JobPosting.id)).where(and_(JobPosting.tenant_id == tenant_id, JobPosting.is_active == True))
     )
     open_jobs = jobs_result.scalar() or 0
 
-    cand_result = await db.execute(
-        select(func.count(Candidate.id)).where(Candidate.tenant_id == tenant_id)
-    )
+    cand_result = await db.execute(select(func.count(Candidate.id)).where(Candidate.tenant_id == tenant_id))
     total_candidates = cand_result.scalar() or 0
 
     # Leaves
@@ -109,13 +109,15 @@ async def admin_dashboard(
     product_result = await db.execute(
         select(
             func.count(InventoryProduct.id).label("total"),
-            func.sum(func.cast(
-                and_(
-                    InventoryProduct.current_stock <= InventoryProduct.minimum_stock,
-                    InventoryProduct.current_stock > 0,
-                ),
-                Integer
-            )).label("low_stock"),
+            func.sum(
+                func.cast(
+                    and_(
+                        InventoryProduct.current_stock <= InventoryProduct.minimum_stock,
+                        InventoryProduct.current_stock > 0,
+                    ),
+                    Integer,
+                )
+            ).label("low_stock"),
             func.sum(InventoryProduct.current_stock * InventoryProduct.purchase_price).label("total_value"),
         ).where(InventoryProduct.tenant_id == tenant_id)
     )
@@ -170,49 +172,58 @@ async def hr_dashboard(
 
     # Pending leaves
     pending_leaves_result = await db.execute(
-        select(LeaveRequest).where(
+        select(LeaveRequest)
+        .where(
             and_(
                 LeaveRequest.tenant_id == tenant_id,
                 LeaveRequest.status == "pending",
                 LeaveRequest.start_date >= start_of_month,
             )
-        ).order_by(LeaveRequest.start_date)
+        )
+        .order_by(LeaveRequest.start_date)
     )
     pending_leaves = pending_leaves_result.scalars().all()
 
     # Pending candidates
     pending_cand_result = await db.execute(
-        select(Candidate).where(
+        select(Candidate)
+        .where(
             and_(
                 Candidate.tenant_id == tenant_id,
                 Candidate.stage == "new",
             )
-        ).order_by(Candidate.created_at.desc()).limit(10)
+        )
+        .order_by(Candidate.created_at.desc())
+        .limit(10)
     )
     pending_candidates = pending_cand_result.scalars().all()
 
     # Attendance needs review
     needs_review_result = await db.execute(
-        select(AttendanceRecord).where(
+        select(AttendanceRecord)
+        .where(
             and_(
                 AttendanceRecord.tenant_id == tenant_id,
                 AttendanceRecord.date == today,
                 AttendanceRecord.status == "late",
             )
-        ).options(selectinload(AttendanceRecord.employee))
+        )
+        .options(selectinload(AttendanceRecord.employee))
     )
     late_today = needs_review_result.scalars().all()
 
     # Payroll to process
     payroll_to_process_result = await db.execute(
-        select(Payroll).where(
+        select(Payroll)
+        .where(
             and_(
                 Payroll.tenant_id == tenant_id,
                 Payroll.payroll_month == today.month,
                 Payroll.payroll_year == today.year,
                 Payroll.status == "calculated",
             )
-        ).options(selectinload(Payroll.employee))
+        )
+        .options(selectinload(Payroll.employee))
     )
     payroll_pending = payroll_to_process_result.scalars().all()
 
@@ -279,15 +290,14 @@ async def manager_dashboard(
 ):
     """لوحة تحكم مدير القسم"""
     tenant_id = current_user["tenant_id"]
+    today = date.today()
     employee_id = current_user.get("employee_id")
 
     if not employee_id:
         return {"message": "غير مسجل كمدر"}
 
     # Get manager's department
-    emp_result = await db.execute(
-        select(Employee).where(Employee.id == employee_id)
-    )
+    emp_result = await db.execute(select(Employee).where(Employee.id == employee_id))
     manager = emp_result.scalar_one_or_none()
 
     if not manager:
@@ -297,7 +307,8 @@ async def manager_dashboard(
 
     # Team attendance today
     team_att_result = await db.execute(
-        select(AttendanceRecord).where(
+        select(AttendanceRecord)
+        .where(
             and_(
                 AttendanceRecord.tenant_id == tenant_id,
                 AttendanceRecord.date == today,
@@ -310,13 +321,15 @@ async def manager_dashboard(
                     )
                 ),
             )
-        ).options(selectinload(AttendanceRecord.employee))
+        )
+        .options(selectinload(AttendanceRecord.employee))
     )
     team_today = team_att_result.scalars().all()
 
     # Team pending leave requests
     team_leaves_result = await db.execute(
-        select(LeaveRequest).where(
+        select(LeaveRequest)
+        .where(
             and_(
                 LeaveRequest.tenant_id == tenant_id,
                 LeaveRequest.status == "pending",
@@ -329,7 +342,8 @@ async def manager_dashboard(
                     )
                 ),
             )
-        ).options(selectinload(LeaveRequest.employee))
+        )
+        .options(selectinload(LeaveRequest.employee))
     )
     team_pending_leaves = team_leaves_result.scalars().all()
 
@@ -444,13 +458,15 @@ async def employee_dashboard(
 
     # Payrolls (this year)
     payroll_result = await db.execute(
-        select(Payroll).where(
+        select(Payroll)
+        .where(
             and_(
                 Payroll.employee_id == employee_id,
                 Payroll.payroll_year == today.year,
                 Payroll.status.in_(["calculated", "approved", "paid"]),
             )
-        ).order_by(Payroll.payroll_month.desc())
+        )
+        .order_by(Payroll.payroll_month.desc())
     )
     payrolls = payroll_result.scalars().all()
 
@@ -494,13 +510,15 @@ async def employee_dashboard(
 
     # Active loans
     active_loans_result = await db.execute(
-        select(EmployeeLoan).where(
+        select(EmployeeLoan)
+        .where(
             and_(
                 EmployeeLoan.employee_id == employee_id,
                 EmployeeLoan.tenant_id == tenant_id,
                 EmployeeLoan.status == "active",
             )
-        ).order_by(EmployeeLoan.repayment_start.desc())
+        )
+        .order_by(EmployeeLoan.repayment_start.desc())
     )
     active_loans = active_loans_result.scalars().all()
 
@@ -555,7 +573,9 @@ async def employee_dashboard(
                 "net_salary": float(latest_payroll.net_salary or 0) if latest_payroll else None,
                 "status": latest_payroll.status if latest_payroll else None,
                 "payslip_url": latest_payroll.payslip_url if latest_payroll else None,
-            } if latest_payroll else None,
+            }
+            if latest_payroll
+            else None,
             "total_paid_this_year": float(sum(p.net_salary or 0 for p in payrolls)),
         },
         "leave": {

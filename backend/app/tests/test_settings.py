@@ -1,5 +1,4 @@
 """اختبارات إعدادات النظام"""
-import pytest
 
 
 def test_company_slug():

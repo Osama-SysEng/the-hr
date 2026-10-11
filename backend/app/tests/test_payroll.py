@@ -1,12 +1,11 @@
 """اختبارات نظام الرواتب"""
-import pytest
+
 from decimal import Decimal
 
 
 def test_egyptian_social_insurance():
-    salary = Decimal("18000")
-    min_wage = Decimal("3500")
-    max_base = Decimal("9800")
+    salary = Decimal(18000)
+    max_base = Decimal(9800)
     employee = max(0, (min(salary, max_base) - 720) * Decimal("0.11"))
     employer = max(0, (min(salary, max_base) - 720) * Decimal("0.1875"))
     assert float(employee) == 998.8
@@ -36,9 +35,9 @@ def test_income_tax_brackets():
 
 
 def test_payroll_net_calculation():
-    base = Decimal("18000")
+    base = Decimal(18000)
     earnings = base + base * Decimal("0.25") + base * Decimal("0.10") + base * Decimal("0.05")
-    deductions = Decimal("0")
+    deductions = Decimal(0)
     insurance = base * Decimal("0.11") + base * Decimal("0.01")
     monthly_tax = Decimal("2687.50")
     net = earnings - deductions - insurance - monthly_tax

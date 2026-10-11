@@ -3,18 +3,18 @@ The H.R - Main FastAPI Application
 Entry point for The H.R Backend API
 """
 
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 import os
 import time
 from collections import defaultdict
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+
 from app.api import api_router
 from app.core.config import settings
-from app.core.database import init_db, close_db
-from app.core.security import decode_access_token
+from app.core.database import close_db, init_db
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
 
 
 @asynccontextmanager
@@ -95,7 +95,9 @@ async def rate_limit_middleware(request: Request, call_next):
         recent = [t for t in _rate_hits[key] if t > window_start]
         _rate_hits[key] = recent
         if len(recent) >= _RATE_LIMIT:
-            return JSONResponse({"success": False, "error": {"code": 429, "message": "rate limit exceeded"}}, status_code=429)
+            return JSONResponse(
+                {"success": False, "error": {"code": 429, "message": "rate limit exceeded"}}, status_code=429
+            )
         recent.append(now)
     return await call_next(request)
 
@@ -349,7 +351,7 @@ async def health_check():
         "status": "healthy",
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -361,16 +363,17 @@ def custom_openapi():
         return app.openapi_schema
 
     from fastapi.openapi.utils import get_openapi
+
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
         description=app.description,
         routes=app.routes,
     )
-    
+
     # Add Arabic summary
     openapi_schema["info"]["x-summary-ar"] = "منصة إدارة الموارد البشرية المتكاملة"
-    
+
     # Tag descriptions
     openapi_schema["tags"] = [
         {
@@ -402,7 +405,7 @@ def custom_openapi():
             "description": "لوحة التحكم الموحدة مع KPIs والإحصائيات",
         },
     ]
-    
+
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
@@ -415,4 +418,5 @@ app.openapi = custom_openapi
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)  # noqa: S104 -- container entrypoint bind

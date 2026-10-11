@@ -3,22 +3,26 @@ The H.R - Analytics & Dashboard API Router
 Dashboards, KPIs, Predictions, Reports
 """
 
-from datetime import date, datetime, timezone, timedelta
-from typing import Optional, List
-from fastapi import APIRouter, Depends, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func, text
-from sqlalchemy.orm import selectinload
+from datetime import UTC, date, datetime, timedelta
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
 from app.models.models import (
-    AttendanceRecord, Employee, Payroll, Tenant, Department,
-    LeaveRequest, Candidate, JobPosting, InventoryProduct, StockMovement,
-    Supplier, User, AnalyticsKPI, Prediction
+    AttendanceRecord,
+    Candidate,
+    Department,
+    Employee,
+    EmployeeLoan,
+    InventoryProduct,
+    JobPosting,
+    LeaveRequest,
+    Payroll,
+    StockMovement,
+    Supplier,
 )
-import uuid
-
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import Integer, and_, func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -42,7 +46,6 @@ async def dashboard_overview(
     today = date.today()
     start_of_month = date(today.year, today.month, 1)
     end_of_month = today
-    start_of_year = date(today.year, 1, 1)
 
     # ----- Employee Stats -----
     emp_result = await db.execute(
@@ -91,16 +94,12 @@ async def dashboard_overview(
     # ----- Recruitment Stats -----
     # Open jobs
     jobs_result = await db.execute(
-        select(func.count(JobPosting.id)).where(
-            and_(JobPosting.tenant_id == tenant_id, JobPosting.is_active == True)
-        )
+        select(func.count(JobPosting.id)).where(and_(JobPosting.tenant_id == tenant_id, JobPosting.is_active == True))
     )
     open_jobs = jobs_result.scalar() or 0
 
     # Candidates in pipeline
-    cand_result = await db.execute(
-        select(func.count(Candidate.id)).where(Candidate.tenant_id == tenant_id)
-    )
+    cand_result = await db.execute(select(func.count(Candidate.id)).where(Candidate.tenant_id == tenant_id))
     total_candidates = cand_result.scalar() or 0
 
     # Candidates by stage
@@ -108,7 +107,8 @@ async def dashboard_overview(
         select(
             Candidate.stage,
             func.count(Candidate.id).label("count"),
-        ).where(Candidate.tenant_id == tenant_id)
+        )
+        .where(Candidate.tenant_id == tenant_id)
         .group_by(Candidate.stage)
     )
     candidates_by_stage = {row.stage: row.count for row in stage_result}
@@ -177,7 +177,7 @@ async def dashboard_overview(
         turnover_risk = min(turnover_risk, 30)
 
     return {
-        "last_updated": datetime.now(timezone.utc).isoformat(),
+        "last_updated": datetime.now(UTC).isoformat(),
         "employees": {
             "total": emp_stats.total or 0,
             "active": emp_stats.active or 0,
@@ -239,9 +239,9 @@ async def dashboard_overview(
 # -----------------------------------------------------------------------------
 @router.get("/attendance/analytics")
 async def attendance_analytics(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    department_id: Optional[str] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    department_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager")),
 ):
@@ -254,21 +254,23 @@ async def attendance_analytics(
         end_date = date.today()
 
     # Base query
-    query = select(
-        AttendanceRecord.department_id,
-        func.count(AttendanceRecord.id).label("total"),
-        func.sum(func.cast(AttendanceRecord.status == "present", Integer)).label("present"),
-        func.sum(func.cast(AttendanceRecord.status == "absent", Integer)).label("absent"),
-        func.sum(func.cast(AttendanceRecord.status == "late", Integer)).label("late"),
-        func.avg(AttendanceRecord.total_hours).label("avg_hours"),
-        func.sum(AttendanceRecord.overtime_minutes).label("total_overtime"),
-    ).join(
-        Employee, AttendanceRecord.employee_id == Employee.id
-    ).where(
-        and_(
-            AttendanceRecord.tenant_id == tenant_id,
-            AttendanceRecord.date >= start_date,
-            AttendanceRecord.date <= end_date,
+    query = (
+        select(
+            AttendanceRecord.department_id,
+            func.count(AttendanceRecord.id).label("total"),
+            func.sum(func.cast(AttendanceRecord.status == "present", Integer)).label("present"),
+            func.sum(func.cast(AttendanceRecord.status == "absent", Integer)).label("absent"),
+            func.sum(func.cast(AttendanceRecord.status == "late", Integer)).label("late"),
+            func.avg(AttendanceRecord.total_hours).label("avg_hours"),
+            func.sum(AttendanceRecord.overtime_minutes).label("total_overtime"),
+        )
+        .join(Employee, AttendanceRecord.employee_id == Employee.id)
+        .where(
+            and_(
+                AttendanceRecord.tenant_id == tenant_id,
+                AttendanceRecord.date >= start_date,
+                AttendanceRecord.date <= end_date,
+            )
         )
     )
 
@@ -281,21 +283,21 @@ async def attendance_analytics(
 
     by_department = []
     for row in rows:
-        dept_name_result = await db.execute(
-            select(Department.name).where(Department.id == row.department_id)
-        )
+        dept_name_result = await db.execute(select(Department.name).where(Department.id == row.department_id))
         dept_name = dept_name_result.scalar() or "إدارة عامة"
-        by_department.append({
-            "department_id": row.department_id,
-            "department_name": dept_name,
-            "total": row.total,
-            "present": row.present or 0,
-            "absent": row.absent or 0,
-            "late": row.late or 0,
-            "attendance_rate": round((row.present or 0) / (row.total or 1) * 100, 2),
-            "avg_hours": round(float(row.avg_hours or 0), 2),
-            "total_overtime": int(row.total_overtime or 0),
-        })
+        by_department.append(
+            {
+                "department_id": row.department_id,
+                "department_name": dept_name,
+                "total": row.total,
+                "present": row.present or 0,
+                "absent": row.absent or 0,
+                "late": row.late or 0,
+                "attendance_rate": round((row.present or 0) / (row.total or 1) * 100, 2),
+                "avg_hours": round(float(row.avg_hours or 0), 2),
+                "total_overtime": int(row.total_overtime or 0),
+            }
+        )
 
     # Overall stats
     overall_result = await db.execute(
@@ -345,7 +347,6 @@ async def recruitment_analytics(
     """تحليلات التوظيف"""
     tenant_id = current_user["tenant_id"]
     today = date.today()
-    start_of_month = date(today.year, today.month, 1)
 
     # Open positions
     jobs_result = await db.execute(
@@ -372,7 +373,8 @@ async def recruitment_analytics(
         select(
             Candidate.stage,
             func.count(Candidate.id).label("count"),
-        ).where(Candidate.tenant_id == tenant_id)
+        )
+        .where(Candidate.tenant_id == tenant_id)
         .group_by(Candidate.stage)
     )
     by_stage = {row.stage: row.count for row in stage_result}
@@ -382,12 +384,14 @@ async def recruitment_analytics(
         select(
             Candidate.source,
             func.count(Candidate.id).label("count"),
-        ).where(
+        )
+        .where(
             and_(
                 Candidate.tenant_id == tenant_id,
                 Candidate.source.isnot(None),
             )
-        ).group_by(Candidate.source)
+        )
+        .group_by(Candidate.source)
     )
     by_source = {row.source: row.count for row in source_result}
 
@@ -428,11 +432,11 @@ async def recruitment_analytics(
 # -----------------------------------------------------------------------------
 @router.get("/payroll/analytics")
 async def payroll_analytics(
-    start_month: Optional[int] = Query(None),
-    start_year: Optional[int] = Query(None),
-    end_month: Optional[int] = Query(None),
-    end_year: Optional[int] = Query(None),
-    department_id: Optional[str] = Query(None),
+    start_month: int | None = Query(None),
+    start_year: int | None = Query(None),
+    end_month: int | None = Query(None),
+    end_year: int | None = Query(None),
+    department_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager", "accountant")),
 ):
@@ -445,13 +449,6 @@ async def payroll_analytics(
     if not end_month:
         end_month = start_month
         end_year = start_year
-
-    # Build date range
-    period_start = date(start_year, start_month, 1)
-    if end_month == 12:
-        period_end = date(end_year, 12, 31)
-    else:
-        period_end = date(end_year, end_month + 1, 1) - timedelta(days=1)
 
     # Base query
     query = select(
@@ -484,31 +481,35 @@ async def payroll_analytics(
     total_cost = 0
     total_employees = 0
     for row in rows:
-        by_month.append({
-            "month": row.payroll_month,
-            "year": row.payroll_year,
-            "employees": row.employees,
-            "total_cost": float(row.total_cost or 0),
-            "average_salary": round(float(row.avg_salary or 0), 2),
-            "total_base": float(row.total_base or 0),
-        })
+        by_month.append(
+            {
+                "month": row.payroll_month,
+                "year": row.payroll_year,
+                "employees": row.employees,
+                "total_cost": float(row.total_cost or 0),
+                "average_salary": round(float(row.avg_salary or 0), 2),
+                "total_base": float(row.total_base or 0),
+            }
+        )
         total_cost += row.total_cost or 0
         total_employees += row.employees
 
     # Department breakdown
-    dept_query = select(
-        Employee.department_id,
-        func.count(Payroll.id).label("employees"),
-        func.sum(Payroll.net_salary).label("total_cost"),
-        func.avg(Payroll.net_salary).label("avg_salary"),
-    ).join(
-        Employee, Payroll.employee_id == Employee.id
-    ).where(
-        and_(
-            Payroll.tenant_id == tenant_id,
-            Payroll.status.in_(["calculated", "approved", "paid"]),
-            Payroll.payroll_year == start_year,
-            Payroll.payroll_month == start_month,
+    dept_query = (
+        select(
+            Employee.department_id,
+            func.count(Payroll.id).label("employees"),
+            func.sum(Payroll.net_salary).label("total_cost"),
+            func.avg(Payroll.net_salary).label("avg_salary"),
+        )
+        .join(Employee, Payroll.employee_id == Employee.id)
+        .where(
+            and_(
+                Payroll.tenant_id == tenant_id,
+                Payroll.status.in_(["calculated", "approved", "paid"]),
+                Payroll.payroll_year == start_year,
+                Payroll.payroll_month == start_month,
+            )
         )
     )
 
@@ -519,17 +520,17 @@ async def payroll_analytics(
     dept_result = await db.execute(dept_query)
     by_department = []
     for row in dept_result:
-        dept_name_result = await db.execute(
-            select(Department.name).where(Department.id == row.department_id)
-        )
+        dept_name_result = await db.execute(select(Department.name).where(Department.id == row.department_id))
         dept_name = dept_name_result.scalar() or "إدارة عامة"
-        by_department.append({
-            "department_id": row.department_id,
-            "department_name": dept_name,
-            "employees": row.employees,
-            "total_cost": float(row.total_cost or 0),
-            "average_salary": round(float(row.avg_salary or 0), 2),
-        })
+        by_department.append(
+            {
+                "department_id": row.department_id,
+                "department_name": dept_name,
+                "employees": row.employees,
+                "total_cost": float(row.total_cost or 0),
+                "average_salary": round(float(row.avg_salary or 0), 2),
+            }
+        )
 
     return {
         "period": {
@@ -566,13 +567,15 @@ async def supply_chain_analytics(
             func.sum(InventoryProduct.current_stock * InventoryProduct.purchase_price).label("total_value"),
             func.sum(InventoryProduct.current_stock).label("total_qty"),
             func.sum(func.cast(InventoryProduct.current_stock <= 0, Integer)).label("out_of_stock"),
-            func.sum(func.cast(
-                and_(
-                    InventoryProduct.current_stock > 0,
-                    InventoryProduct.current_stock <= InventoryProduct.minimum_stock,
-                ),
-                Integer
-            )).label("low_stock"),
+            func.sum(
+                func.cast(
+                    and_(
+                        InventoryProduct.current_stock > 0,
+                        InventoryProduct.current_stock <= InventoryProduct.minimum_stock,
+                    ),
+                    Integer,
+                )
+            ).label("low_stock"),
         ).where(InventoryProduct.tenant_id == tenant_id)
     )
     product_stats = product_result.one()
@@ -584,12 +587,14 @@ async def supply_chain_analytics(
             StockMovement.movement_type,
             func.sum(StockMovement.quantity).label("total"),
             func.count(StockMovement.id).label("count"),
-        ).where(
+        )
+        .where(
             and_(
                 StockMovement.tenant_id == tenant_id,
                 StockMovement.created_at >= thirty_days_ago,
             )
-        ).group_by(StockMovement.movement_type)
+        )
+        .group_by(StockMovement.movement_type)
     )
     movements = {row.movement_type: {"total": float(row.total or 0), "count": row.count} for row in movements_result}
 
@@ -610,23 +615,28 @@ async def supply_chain_analytics(
             InventoryProduct.current_stock,
             InventoryProduct.purchase_price,
             func.round(InventoryProduct.current_stock * InventoryProduct.purchase_price, 2).label("value"),
-        ).where(
+        )
+        .where(
             and_(
                 InventoryProduct.tenant_id == tenant_id,
                 InventoryProduct.current_stock > 0,
                 InventoryProduct.purchase_price.isnot(None),
             )
-        ).order_by(text("value DESC")).limit(10)
+        )
+        .order_by(text("value DESC"))
+        .limit(10)
     )
     top_products = []
     for row in top_result:
-        top_products.append({
-            "name": row.name,
-            "sku": row.sku,
-            "stock": float(row.current_stock),
-            "unit_price": float(row.purchase_price or 0),
-            "value": float(row.value or 0),
-        })
+        top_products.append(
+            {
+                "name": row.name,
+                "sku": row.sku,
+                "stock": float(row.current_stock),
+                "unit_price": float(row.purchase_price or 0),
+                "value": float(row.value or 0),
+            }
+        )
 
     return {
         "products": {

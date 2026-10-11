@@ -1,5 +1,4 @@
 """اختبارات المخزن وسلسلة التوريد"""
-import pytest
 
 
 def test_stock_movement():

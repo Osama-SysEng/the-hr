@@ -1,5 +1,4 @@
 """اختبارات وحدة النماذج"""
-import pytest
 
 
 def test_tenant_creation():

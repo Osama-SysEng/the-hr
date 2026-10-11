@@ -3,19 +3,16 @@ The H.R - Attendance API Router
 Clock-in/out, attendance records, reports
 """
 
-from datetime import date, datetime, timedelta, timezone
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func, text
+import uuid
+from datetime import UTC, date, datetime
+
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
-from app.models.models import (
-    AttendanceRecord, Employee, Tenant, Department
-)
-import uuid
-
+from app.models.models import AttendanceRecord, Department, Employee
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import Integer, and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
@@ -23,23 +20,21 @@ router = APIRouter(prefix="/attendance", tags=["Attendance"])
 # -----------------------------------------------------------------------------
 # Schemas
 # -----------------------------------------------------------------------------
-from pydantic import BaseModel, Field
-from datetime import date, datetime
-from typing import Optional
+from pydantic import BaseModel
 
 
 class ClockInRequest(BaseModel):
-    biometric_data: Optional[str] = None  # Base64 encoded fingerprint or face
-    gps_lat: Optional[float] = None
-    gps_lng: Optional[float] = None
-    gps_accuracy: Optional[float] = None
-    photo_url: Optional[str] = None
-    notes: Optional[str] = None
+    biometric_data: str | None = None  # Base64 encoded fingerprint or face
+    gps_lat: float | None = None
+    gps_lng: float | None = None
+    gps_accuracy: float | None = None
+    photo_url: str | None = None
+    notes: str | None = None
 
 
 class ClockOutRequest(BaseModel):
-    biometric_data: Optional[str] = None
-    notes: Optional[str] = None
+    biometric_data: str | None = None
+    notes: str | None = None
 
 
 class AttendanceRecordResponse(BaseModel):
@@ -48,18 +43,18 @@ class AttendanceRecordResponse(BaseModel):
     employee_number: str
     employee_name: str
     date: date
-    clock_in: Optional[datetime] = None
-    clock_out: Optional[datetime] = None
+    clock_in: datetime | None = None
+    clock_out: datetime | None = None
     status: str
     biometric_verified: bool
     gps_verified: bool
     photo_verified: bool
-    face_match_score: Optional[float] = None
+    face_match_score: float | None = None
     late_minutes: int
     early_departure_minutes: int
-    total_hours: Optional[float] = None
+    total_hours: float | None = None
     overtime_minutes: int
-    notes: Optional[str] = None
+    notes: str | None = None
     created_at: datetime
 
     class Config:
@@ -67,7 +62,7 @@ class AttendanceRecordResponse(BaseModel):
 
 
 class AttendanceListResponse(BaseModel):
-    records: List[AttendanceRecordResponse]
+    records: list[AttendanceRecordResponse]
     total: int
     page: int
     page_size: int
@@ -87,8 +82,8 @@ class DailyAttendanceResponse(BaseModel):
 class AttendanceReportRequest(BaseModel):
     start_date: date
     end_date: date
-    department_id: Optional[str] = None
-    status: Optional[str] = None
+    department_id: str | None = None
+    status: str | None = None
 
 
 class AttendanceReportResponse(BaseModel):
@@ -101,8 +96,8 @@ class AttendanceReportResponse(BaseModel):
     on_leave_count: int
     average_hours: float
     average_overtime_minutes: float
-    by_department: List[dict]
-    by_day: List[dict]
+    by_department: list[dict]
+    by_day: list[dict]
 
 
 # -----------------------------------------------------------------------------
@@ -172,7 +167,7 @@ async def clock_in(
                 detail="لقد قمت بتسجيل الدخول بالفعل اليوم",
             )
         # Re-clock-in after clocking out
-        existing.clock_in = datetime.now(timezone.utc)
+        existing.clock_in = datetime.now(UTC)
         existing.clock_out = None
         existing.status = "clocked_in"
         existing.biometric_verified = bool(request.biometric_data)
@@ -192,7 +187,7 @@ async def clock_in(
         tenant_id=tenant_id,
         employee_id=employee_id,
         date=today,
-        clock_in=datetime.now(timezone.utc),
+        clock_in=datetime.now(UTC),
         status="clocked_in",
         biometric_verified=bool(request.biometric_data),
         gps_lat=request.gps_lat,
@@ -265,7 +260,7 @@ async def clock_out(
 
     # Calculate hours
     clock_in_time = record.clock_in
-    clock_out_time = datetime.now(timezone.utc)
+    clock_out_time = datetime.now(UTC)
     total_seconds = (clock_out_time - clock_in_time).total_seconds()
     total_hours = total_seconds / 3600
 
@@ -312,7 +307,8 @@ async def get_today_attendance(
 
     if employee_id:
         result = await db.execute(
-            select(AttendanceRecord).where(
+            select(AttendanceRecord)
+            .where(
                 and_(
                     AttendanceRecord.employee_id == employee_id,
                     AttendanceRecord.date == today,
@@ -350,11 +346,11 @@ async def get_today_attendance(
 async def list_attendance_records(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    employee_id: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    department_id: Optional[str] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    employee_id: str | None = Query(None),
+    status: str | None = Query(None),
+    department_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager")),
 ):
@@ -389,14 +385,21 @@ async def list_attendance_records(
     # Load employee for each record
     response_records = []
     for record in records:
-        emp_result = await db.execute(
-            select(Employee).where(Employee.id == record.employee_id)
-        )
+        emp_result = await db.execute(select(Employee).where(Employee.id == record.employee_id))
         employee = emp_result.scalar_one_or_none()
-        response_records.append(_build_attendance_response(record, employee or Employee(
-            first_name="Unknown", last_name="Unknown", employee_number="???",
-            id=record.employee_id, tenant_id=tenant_id
-        )))
+        response_records.append(
+            _build_attendance_response(
+                record,
+                employee
+                or Employee(
+                    first_name="Unknown",
+                    last_name="Unknown",
+                    employee_number="???",
+                    id=record.employee_id,
+                    tenant_id=tenant_id,
+                ),
+            )
+        )
 
     return AttendanceListResponse(
         records=response_records,
@@ -411,7 +414,7 @@ async def list_attendance_records(
 # -----------------------------------------------------------------------------
 @router.get("/report/daily", response_model=DailyAttendanceResponse)
 async def daily_attendance_report(
-    report_date: Optional[date] = Query(None),
+    report_date: date | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_role("super_admin", "company_admin", "hr_manager")),
 ):
@@ -421,16 +424,19 @@ async def daily_attendance_report(
 
     # Count total employees
     total_result = await db.execute(
-        select(func.count(Employee.id)).where(
-            and_(Employee.tenant_id == tenant_id, Employee.status == "active")
-        )
+        select(func.count(Employee.id)).where(and_(Employee.tenant_id == tenant_id, Employee.status == "active"))
     )
     total_employees = total_result.scalar() or 0
 
     if total_employees == 0:
         return DailyAttendanceResponse(
             date=report_date,
-            total_employees=0, present=0, absent=0, late=0, on_leave=0, holiday=0,
+            total_employees=0,
+            present=0,
+            absent=0,
+            late=0,
+            on_leave=0,
+            holiday=0,
             attendance_rate=0.0,
         )
 
@@ -502,53 +508,63 @@ async def period_attendance_report(
     total_overtime = sum(r.overtime_minutes for r in records)
 
     # By department
-    dept_query = select(Employee.department_id, func.count(AttendanceRecord.id)).join(
-        AttendanceRecord, AttendanceRecord.employee_id == Employee.id
-    ).where(
-        and_(
-            Employee.tenant_id == tenant_id,
-            AttendanceRecord.tenant_id == tenant_id,
-            AttendanceRecord.date >= request.start_date,
-            AttendanceRecord.date <= request.end_date,
+    dept_query = (
+        select(Employee.department_id, func.count(AttendanceRecord.id))
+        .join(AttendanceRecord, AttendanceRecord.employee_id == Employee.id)
+        .where(
+            and_(
+                Employee.tenant_id == tenant_id,
+                AttendanceRecord.tenant_id == tenant_id,
+                AttendanceRecord.date >= request.start_date,
+                AttendanceRecord.date <= request.end_date,
+            )
         )
-    ).group_by(Employee.department_id)
+        .group_by(Employee.department_id)
+    )
 
     dept_result = await db.execute(dept_query)
     by_department = []
     for row in dept_result:
         dept_id = row.department_id
-        dept_name_result = await db.execute(
-            select(Department.name).where(Department.id == dept_id)
-        )
+        dept_name_result = await db.execute(select(Department.name).where(Department.id == dept_id))
         dept_name = dept_name_result.scalar() or "غير محدد"
-        by_department.append({
-            "department_id": dept_id,
-            "department_name": dept_name,
-            "total_records": row.total,
-        })
+        by_department.append(
+            {
+                "department_id": dept_id,
+                "department_name": dept_name,
+                "total_records": row.total,
+            }
+        )
 
     # By day
-    by_day_query = select(
-        AttendanceRecord.date,
-        func.count(AttendanceRecord.id).label("total"),
-        func.sum(func.cast(AttendanceRecord.status == "present", Integer)).label("present"),
-    ).where(
-        and_(
-            AttendanceRecord.tenant_id == tenant_id,
-            AttendanceRecord.date >= request.start_date,
-            AttendanceRecord.date <= request.end_date,
+    by_day_query = (
+        select(
+            AttendanceRecord.date,
+            func.count(AttendanceRecord.id).label("total"),
+            func.sum(func.cast(AttendanceRecord.status == "present", Integer)).label("present"),
         )
-    ).group_by(AttendanceRecord.date).order_by(AttendanceRecord.date)
+        .where(
+            and_(
+                AttendanceRecord.tenant_id == tenant_id,
+                AttendanceRecord.date >= request.start_date,
+                AttendanceRecord.date <= request.end_date,
+            )
+        )
+        .group_by(AttendanceRecord.date)
+        .order_by(AttendanceRecord.date)
+    )
 
     by_day_result = await db.execute(by_day_query)
     by_day = []
     for row in by_day_result:
-        by_day.append({
-            "date": row.date,
-            "total": row.total,
-            "present": row.present or 0,
-            "absent": row.total - (row.present or 0),
-        })
+        by_day.append(
+            {
+                "date": row.date,
+                "total": row.total,
+                "present": row.present or 0,
+                "absent": row.total - (row.present or 0),
+            }
+        )
 
     return AttendanceReportResponse(
         start_date=request.start_date,

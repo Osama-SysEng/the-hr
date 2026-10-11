@@ -1,5 +1,4 @@
 """اختبارات لوحة التحكم"""
-import pytest
 
 
 def test_dashboard_stats():

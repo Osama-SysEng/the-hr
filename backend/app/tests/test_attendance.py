@@ -1,6 +1,6 @@
 """اختبارات الحضور والانصراف"""
-import pytest
-from datetime import date, timedelta
+
+from datetime import date
 
 
 def test_clock_in_status():

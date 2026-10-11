@@ -3,20 +3,23 @@ The H.R - Face Recognition Service
 Biometric face recognition for attendance verification
 """
 
-import os
-import numpy as np
 import base64
-from typing import Optional, Tuple, List, Dict, Any
+import logging
 from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class FaceRecognitionResult:
     matched: bool
     confidence: float
-    employee_id: Optional[str] = None
-    employee_name: Optional[str] = None
-    face_encoding: Optional[List[float]] = None
+    employee_id: str | None = None
+    employee_name: str | None = None
+    face_encoding: list[float] | None = None
     message: str = ""
 
 
@@ -28,13 +31,14 @@ class FaceRecognitionService:
     """
 
     def __init__(self):
-        self.known_encodings: Dict[str, np.ndarray] = {}  # employee_id -> encoding
-        self.known_names: Dict[str, str] = {}  # employee_id -> name
+        self.known_encodings: dict[str, np.ndarray] = {}  # employee_id -> encoding
+        self.known_names: dict[str, str] = {}  # employee_id -> name
         self.tolerance: float = 0.6
 
         # Try to import face_recognition library
         try:
             import face_recognition
+
             self.face_recognition_lib = face_recognition
         except ImportError:
             self.face_recognition_lib = None
@@ -42,6 +46,7 @@ class FaceRecognitionService:
 
         try:
             import cv2
+
             self.cv2 = cv2
         except ImportError:
             self.cv2 = None
@@ -78,6 +83,7 @@ class FaceRecognitionService:
 
             return False
         except Exception as e:
+            logger.exception("Error loading face for %s", employee_id)
             print(f"Error loading face for {employee_id}: {e}")
             return False
 
@@ -88,6 +94,7 @@ class FaceRecognitionService:
                 image_data = f.read()
             return self.load_employee_face(employee_id, name, base64.b64encode(image_data).decode())
         except Exception as e:
+            logger.exception("Error loading face from file %s", image_path)
             print(f"Error loading face from file {image_path}: {e}")
             return False
 
@@ -171,13 +178,14 @@ class FaceRecognitionService:
                 )
 
         except Exception as e:
+            logger.exception("Error during face recognition")
             return FaceRecognitionResult(
                 matched=False,
                 confidence=0.0,
-                message=f"Error during face recognition: {str(e)}",
+                message=f"Error during face recognition: {e!s}",
             )
 
-    def get_face_encoding_from_image(self, image_base64: str) -> Optional[List[float]]:
+    def get_face_encoding_from_image(self, image_base64: str) -> list[float] | None:
         """Extract face encoding from image (for enrollment)."""
         if not self.face_recognition_lib:
             return None
@@ -198,6 +206,7 @@ class FaceRecognitionService:
 
             return None
         except Exception:
+            logger.exception("Face encoding extraction failed")
             return None
 
     def verify_liveness(self, image_base64: str) -> bool:
@@ -229,13 +238,11 @@ class FaceRecognitionService:
                 min_size = 50
                 max_size = 500
 
-                if min_size <= face_height <= max_size and min_size <= face_width <= max_size:
-                    return True
-
-                return False
+                return min_size <= face_height <= max_size and min_size <= face_width <= max_size
 
             return False  # Multiple faces = potential spoofing
         except Exception:
+            logger.exception("Liveness detection failed")
             return True
 
     def remove_employee(self, employee_id: str) -> bool:
@@ -246,7 +253,7 @@ class FaceRecognitionService:
             return True
         return False
 
-    def get_all_employees(self) -> List[Dict[str, Any]]:
+    def get_all_employees(self) -> list[dict[str, Any]]:
         """Get list of all enrolled employees."""
         return [
             {
