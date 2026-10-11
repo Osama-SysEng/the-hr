@@ -39,7 +39,7 @@ jobs:
       - name: Install deps
         run: pip install -r backend/requirements.txt pytest pytest-asyncio httpx
       - name: Run tests
-        run: pytest backend/app/tests -v --tb=short
+        run: cd backend && python -m pytest app/tests -v --tb=short
         env:
           DATABASE_URL: postgresql+asyncpg://hr_user:hr_password@localhost:5432/thehr
           REDIS_URL: redis://localhost:6379/0
