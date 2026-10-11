@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Alembic Environment Configuration
 The H.R - HR Operating System

@@ -55,11 +55,11 @@ jobs:
       - name: Install tools
         run: pip install bandit pip-audit safety
       - name: Bandit
-        run: bandit -r backend/app/ -f json -o bandit.json || true
+        run: bandit -r backend/app/ -f sarif -o bandit.sarif || true
       - name: pip-audit
         run: pip-audit --format=json || true
       - name: Upload
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: bandit.json
+          sarif_file: bandit.sarif
