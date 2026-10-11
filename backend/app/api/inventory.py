@@ -265,6 +265,7 @@ async def list_products(
     category: Optional[str] = Query(None),
     status: str = Query("all"),  # all, active, inactive, low_stock, out_of_stock
     search: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -300,7 +301,7 @@ async def list_products(
             )
         )
 
-    query = query.order_by(InventoryProduct.name)
+    query = query.order_by(InventoryProduct.name).limit(limit)
     result = await db.execute(query)
     products = result.scalars().all()
 
@@ -495,6 +496,7 @@ async def create_stock_movement(
 @router.get("/suppliers", response_model=List[SupplierResponse])
 async def list_suppliers(
     search: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -512,7 +514,7 @@ async def list_suppliers(
             )
         )
 
-    query = query.order_by(Supplier.name)
+    query = query.order_by(Supplier.name).limit(limit)
     result = await db.execute(query)
     suppliers = result.scalars().all()
 
@@ -629,6 +631,7 @@ async def create_purchase_order(
 @router.get("/purchase-orders", response_model=List[PurchaseOrderResponse])
 async def list_purchase_orders(
     status: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -640,7 +643,7 @@ async def list_purchase_orders(
     if status:
         query = query.where(PurchaseOrder.status == status)
 
-    query = query.order_by(PurchaseOrder.created_at.desc())
+    query = query.order_by(PurchaseOrder.created_at.desc()).limit(limit)
     result = await db.execute(query)
     orders = result.scalars().all()
 
@@ -753,6 +756,7 @@ async def get_purchase_order_detail(
 # -----------------------------------------------------------------------------
 @router.get("/report/summary", response_model=InventoryReportResponse)
 async def inventory_summary_report(
+    limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -787,9 +791,9 @@ async def inventory_summary_report(
     )
     stats = result.one()
 
-    # Get all products
+    # Get products (bounded page of the item breakdown; aggregates cover the full set)
     prod_result = await db.execute(
-        select(InventoryProduct).where(InventoryProduct.tenant_id == tenant_id)
+        select(InventoryProduct).where(InventoryProduct.tenant_id == tenant_id).limit(limit)
     )
     products = prod_result.scalars().all()
 

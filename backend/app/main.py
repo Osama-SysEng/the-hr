@@ -5,6 +5,9 @@ Entry point for The H.R Backend API
 
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+import os
+import time
+from collections import defaultdict
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -65,6 +68,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# -----------------------------------------------------------------------------
+# Rate Limiting (sliding window per IP+path, /health exempt)
+# -----------------------------------------------------------------------------
+def _rate_limit_per_minute() -> int:
+    try:
+        value = int(os.getenv("RATE_LIMIT_PER_MINUTE", "600"))
+    except ValueError:
+        value = 600
+    return max(1, min(value, 6000))
+
+
+_RATE_LIMIT = _rate_limit_per_minute()
+_rate_hits: dict = defaultdict(list)
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    if request.url.path != "/health":
+        now = time.monotonic()
+        window_start = now - 60.0
+        client = request.client.host if request.client else "unknown"
+        key = f"{client}:{request.url.path}"
+        recent = [t for t in _rate_hits[key] if t > window_start]
+        _rate_hits[key] = recent
+        if len(recent) >= _RATE_LIMIT:
+            return JSONResponse({"success": False, "error": {"code": 429, "message": "rate limit exceeded"}}, status_code=429)
+        recent.append(now)
+    return await call_next(request)
 
 
 # -----------------------------------------------------------------------------
