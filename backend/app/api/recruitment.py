@@ -467,8 +467,8 @@ async def create_candidate(
     if cv_file:
         if not re.fullmatch(r"[A-Za-z0-9_-]+", tenant_id):
             raise HTTPException(status_code=400, detail="Invalid tenant")
-        upload_dir = os.path.join("uploads", tenant_id)  # codeql[py/path-injection]
-        os.makedirs(upload_dir, exist_ok=True)  # codeql[py/path-injection]
+        upload_dir = os.path.join("uploads", tenant_id)
+        os.makedirs(upload_dir, exist_ok=True)
         safe_name = os.path.basename(cv_file.filename or "cv")
         cv_filename = f"{uuid.uuid4().hex}_{safe_name}"
         cv_path = os.path.join(upload_dir, cv_filename)
