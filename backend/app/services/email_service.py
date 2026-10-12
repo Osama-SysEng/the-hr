@@ -133,8 +133,10 @@ class EmailService:
             return True
 
         except Exception as e:
-            logger.exception("Failed to send email to %s", _mask_email(to))
-            print(f"Failed to send email to {_mask_email(to)}: {e}")
+            # Log a generic message only: recipient addresses must never
+            # reach logs (CodeQL clear-text-logging). Correlate via SMTP logs.
+            logger.exception("Failed to send email")
+            print(f"Failed to send email: {e}")
             return False
 
     def send_payslip_email(

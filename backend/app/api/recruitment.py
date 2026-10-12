@@ -459,16 +459,15 @@ async def create_candidate(
     """إضافة مرشح جديد"""
     tenant_id = current_user["tenant_id"]
 
-    # Save CV file (blocking file I/O offloaded to a worker thread).
-    # Path-injection guard: tenant comes from JWT — accept alphanumerics,
-    # dashes and underscores only; filename is reduced to its basename and
-    # always prefixed with a uuid so user input never controls the path.
+    # Path-injection guard: tenant_id is allow-list validated ([A-Za-z0-9_-]+)
+    # and the filename is a uuid-prefixed basename, so user input cannot
+    # escape uploads/. The inline suppression below documents this barrier.
     cv_url = None
     cv_text = None
     if cv_file:
         if not re.fullmatch(r"[A-Za-z0-9_-]+", tenant_id):
             raise HTTPException(status_code=400, detail="Invalid tenant")
-        upload_dir = os.path.join("uploads", tenant_id)
+        upload_dir = os.path.join("uploads", tenant_id)  # codeql[py/path-injection]
         os.makedirs(upload_dir, exist_ok=True)
         safe_name = os.path.basename(cv_file.filename or "cv")
         cv_filename = f"{uuid.uuid4().hex}_{safe_name}"
