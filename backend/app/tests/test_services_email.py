@@ -5,7 +5,7 @@ def test_email_connection():
     smtp_host = "smtp.gmail.com"
     smtp_port = 587
     assert smtp_port == 587
-    assert "gmail.com" in smtp_host
+    assert smtp_host == "smtp.gmail.com"
 
 
 def test_payslip_template():

@@ -6,6 +6,7 @@ AI CV Screening, Job Postings, Candidates, AI Interviews
 import asyncio
 import logging
 import os
+import re
 import shutil
 import uuid
 from datetime import UTC, datetime
@@ -458,13 +459,19 @@ async def create_candidate(
     """إضافة مرشح جديد"""
     tenant_id = current_user["tenant_id"]
 
-    # Save CV file (blocking file I/O offloaded to a worker thread)
+    # Save CV file (blocking file I/O offloaded to a worker thread).
+    # Path-injection guard: tenant comes from JWT — accept alphanumerics,
+    # dashes and underscores only; filename is reduced to its basename and
+    # always prefixed with a uuid so user input never controls the path.
     cv_url = None
     cv_text = None
     if cv_file:
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", tenant_id):
+            raise HTTPException(status_code=400, detail="Invalid tenant")
         upload_dir = os.path.join("uploads", tenant_id)
         os.makedirs(upload_dir, exist_ok=True)
-        cv_filename = f"{uuid.uuid4().hex}_{cv_file.filename}"
+        safe_name = os.path.basename(cv_file.filename or "cv")
+        cv_filename = f"{uuid.uuid4().hex}_{safe_name}"
         cv_path = os.path.join(upload_dir, cv_filename)
         await asyncio.to_thread(_save_upload_file, cv_file, cv_path)
         cv_url = f"/uploads/{tenant_id}/{cv_filename}"

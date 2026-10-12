@@ -7,6 +7,7 @@ each task in its own event loop.
 """
 
 import asyncio
+import hashlib
 import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
@@ -44,7 +45,10 @@ def send_payslip_email_task(self, employee_id: str, payroll_id: str):
     try:
         return asyncio.run(_run())
     except Exception as e:
-        logger.exception("send_payslip_email_task failed for employee %s", employee_id)
+        logger.exception(
+            "send_payslip_email_task failed for employee %s",
+            hashlib.sha256(str(employee_id).encode()).hexdigest()[:12],
+        )
         raise self.retry(exc=e, countdown=60) from e
 
 
@@ -143,7 +147,10 @@ def calculate_payroll_task(self, employee_id: str, month: int, year: int):
     try:
         return asyncio.run(_run())
     except Exception as e:
-        logger.exception("calculate_payroll_task failed for employee %s", employee_id)
+        logger.exception(
+            "calculate_payroll_task failed for employee %s",
+            hashlib.sha256(str(employee_id).encode()).hexdigest()[:12],
+        )
         raise self.retry(exc=e, countdown=60) from e
 
 

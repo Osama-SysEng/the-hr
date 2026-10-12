@@ -3,6 +3,7 @@ The H.R - Payroll API Router
 Payroll calculation, payslips, salary history
 """
 
+import hashlib
 import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
@@ -773,8 +774,12 @@ async def calculate_all_payrolls(
             created.append(payroll)
 
         except Exception as exc:
-            logger.exception("Payroll calculation failed for employee %s", employee.id)
-            failed.append({"employee_id": str(employee.id), "error": str(exc)})
+            logger.exception(
+                "Payroll calculation failed for employee %s",
+                hashlib.sha256(str(employee.id).encode()).hexdigest()[:12],
+            )
+            # Never expose tracebacks to API clients (stack-trace exposure).
+            failed.append({"employee_id": str(employee.id), "error": type(exc).__name__})
             continue
 
     await db.commit()

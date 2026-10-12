@@ -16,6 +16,15 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _mask_email(address: str) -> str:
+    """Mask an email address for logs: keep domain only (CodeQL: no clear-text PII)."""
+    try:
+        _, domain = address.rsplit("@", 1)
+        return f"***@{domain}"
+    except (AttributeError, ValueError):
+        return "***"
+
+
 @dataclass
 class EmailMessage:
     to: str
@@ -124,8 +133,8 @@ class EmailService:
             return True
 
         except Exception as e:
-            logger.exception("Failed to send email to %s", to)
-            print(f"Failed to send email to {to}: {e}")
+            logger.exception("Failed to send email to %s", _mask_email(to))
+            print(f"Failed to send email to {_mask_email(to)}: {e}")
             return False
 
     def send_payslip_email(

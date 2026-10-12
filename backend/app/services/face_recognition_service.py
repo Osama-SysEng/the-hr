@@ -13,6 +13,13 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+def _tag(value: object) -> str:
+    """Short opaque tag for identifiers in logs (no clear-text PII)."""
+    import hashlib
+
+    return hashlib.sha256(str(value).encode()).hexdigest()[:12]
+
+
 @dataclass
 class FaceRecognitionResult:
     matched: bool
@@ -83,8 +90,8 @@ class FaceRecognitionService:
 
             return False
         except Exception as e:
-            logger.exception("Error loading face for %s", employee_id)
-            print(f"Error loading face for {employee_id}: {e}")
+            logger.exception("Error loading face for %s", _tag(employee_id))
+            print(f"Error loading face for {_tag(employee_id)}: {e}")
             return False
 
     def load_employee_face_from_file(self, employee_id: str, name: str, image_path: str) -> bool:
