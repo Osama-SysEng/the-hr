@@ -442,7 +442,7 @@ Answers:
         # Tenure factor (longer tenure = lower risk)
         if years_of_service > 5:
             risk_score -= 10
-            factors.append("ال전대 طويلة - استقرار عالي")
+            factors.append("الخدمة الطويلة - استقرار عالي")
 
         # Normalize to 0-100
         risk_score = min(100, max(0, risk_score))

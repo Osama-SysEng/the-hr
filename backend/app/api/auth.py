@@ -291,11 +291,11 @@ async def forgot_password(
 
     if not user:
         # Always return success to prevent email enumeration
-        return {"message": "إذا كان البريد مسجلاً将是، ستصلك تعليمات إعادة التعيين"}
+        return {"message": "إذا كان البريد مسجلاً، ستصلك تعليمات إعادة التعيين"}
 
     # In production: send email with reset link
     # For now, return the token (should be sent via email)
     return {
-        "message": "إذا كان البريد مسجلاً，将是Stories التعليمات لإعادة التعيين",
+        "message": "إذا كان البريد مسجلاً، ستصلك التعليمات لإعادة التعيين",
         # "reset_token": reset_token,  # Only for testing
     }

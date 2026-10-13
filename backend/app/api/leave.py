@@ -275,7 +275,7 @@ async def approve_leave(
     if leave.status != "pending":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="طلب الإجازة 상태이다 بالفعل",
+            detail="طلب الإجازة موجود بالفعل",
         )
 
     leave.status = "approved"
@@ -310,7 +310,7 @@ async def reject_leave(
     if leave.status != "pending":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="طلب الإجازة 상태이다 بالفعل",
+            detail="طلب الإجازة موجود بالفعل",
         )
 
     leave.status = "rejected"

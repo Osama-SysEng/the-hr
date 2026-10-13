@@ -6,7 +6,7 @@ pytest backend/app/tests -v --tb=short
 ```
 
 ## الأنواع
-- Unit tests: اختبار الدوال والخدمات 개별적으로
+- Unit tests: اختبار الدوال والخدمات كل على حدة
 - Integration tests: اختبار الـ API endpoints مع قاعدة البيانات
 - Security tests: bandit, pip-audit, safety
 

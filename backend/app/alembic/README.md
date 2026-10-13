@@ -13,7 +13,7 @@ The H.R - Alembic Migrations
     # عرض التاريخ
     alembic history
 
-    # عرض الفرق بين当前和头部
+    # عرض الفرق بين النسخة الحالية والرأس
     alembic current
 
     # إنشاء نسخة احتياطية قبل التحديث

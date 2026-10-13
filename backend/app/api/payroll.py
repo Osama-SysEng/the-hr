@@ -270,7 +270,7 @@ async def calculate_payroll(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="الراتب لهذا الشهر уже 계산되며",
+            detail="الراتب لهذا الشهر محسوب بالفعل",
         )
 
     # Base salary
