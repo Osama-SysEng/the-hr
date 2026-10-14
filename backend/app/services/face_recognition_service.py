@@ -7,9 +7,8 @@ import base64
 from dataclasses import dataclass
 from typing import Any
 
-from app.core.logging_utils import get_logger
-
 import numpy as np
+from app.core.logging_utils import get_logger
 
 logger = get_logger(__name__)
 

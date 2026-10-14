@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.core.logging_utils import get_logger
-
 from openai import OpenAI
 
 logger = get_logger(__name__)
