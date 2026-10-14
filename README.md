@@ -1,7 +1,7 @@
 # THE H.R — AI-Powered SaaS Human Resources Operating System
 
 **One platform. Every HR function. Zero manual work.**
-Built for any company, any size, any industry — from a 10-person startup to a 10,000-person enterprise.
+Built for small-to-mid-size companies across industries.
 
 **Live Demo:** https://view.mindshub.ai/view/e23e9d620/fa3e3dc1
 **GitHub:** https://github.com/Osama-SysEng/the-hr
@@ -53,7 +53,7 @@ The H.R is not an HR software. It is a complete **Human Resources Operating Syst
 │  Subscription Tiers                                         │
 │  ├── Starter:    up to 50 employees                        │
 │  ├── Growth:     up to 500 employees                       │
-│  └── Enterprise: unlimited employees + custom integrations │
+│  └── Enterprise: highest tier + custom integrations │
 ├─────────────────────────────────────────────────────────────┤
 │  Modules (5 Core + 1 AI Layer)                             │
 │  ├── 1. Smart Attendance System                             │
@@ -301,10 +301,10 @@ Phase 5: Human Review & Decision
 
 ## FEATURES
 
-### COMPLETED (105 files deployed)
+### COMPLETED (110 files tracked)
 
-**Backend — 65+ files:**
-- ✅ 11 API routers with 100+ endpoints
+**Backend — 47 files:**
+- ✅ 11 API routers with 72 endpoints
   - `auth.py` — Login, register, profile, password change
   - `employees.py` — CRUD, search, bulk import
   - `attendance.py` — Clock-in/out, reports, analytics
@@ -560,9 +560,8 @@ docker-compose exec backend python scripts/seed_db.py
 ### Deployment Options
 
 1. **Docker Compose** — simplest, for development and small production
-2. **Kubernetes** — enterprise scale (`infrastructure/k8s/` manifests included)
-3. **Puter.com** — free cloud hosting (`puter.config.json` included)
-4. **AWS / GCP** — full cloud deployment (see `docs/deployment.md`)
+2. **Puter.com** — free cloud hosting (`puter.config.json` included)
+3. **AWS / GCP** — full cloud deployment (see `docs/deployment.md`)
 
 ### Production Checklist
 
@@ -933,13 +932,8 @@ the-hr/
 │       ├── llm-integration-ar.md    # LLM integration guide (Arabic)
 │       ├── production-activation-ar.md  # Production activation (Arabic)
 │       └── ranking-and-human-review-ar.md  # Ranking + review (Arabic)
-├── infrastructure/
-│   ├── docker/
-│   │   ├── Dockerfile.backend        # Python backend container
-│   │   └── Dockerfile.frontend       # Node.js frontend container
-│   ├── k8s/                          # Kubernetes manifests (placeholder)
-│   └── puter/
-│       └── puter.config.json         # Puter.com deployment config
+├── docker-compose.yml            # Local Docker Compose deployment
+├── frontend/app/Dockerfile       # Frontend container
 ├── scripts/
 │   ├── seed_db.py                    # Initial data seeding
 │   ├── backup_db.py                  # Database backup utility
