@@ -3,7 +3,6 @@ The H.R - Email Service
 Send emails for notifications, payslips, reports, invitations
 """
 
-import logging
 import os
 import smtplib
 from dataclasses import dataclass
@@ -13,7 +12,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from app.core.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def _mask_email(address: str) -> str:
@@ -60,9 +61,8 @@ class EmailService:
             self.smtp_client.starttls()
             self.smtp_client.login(self.smtp_user, self.smtp_password)
             return True
-        except Exception as e:
+        except Exception:
             logger.exception("Email connection failed")
-            print(f"Email connection failed: {e}")
             return False
 
     def disconnect(self):
@@ -96,7 +96,7 @@ class EmailService:
             True if sent successfully, False otherwise
         """
         if not self.smtp_user:
-            print("Email service not configured")
+            logger.warning("Email service not configured; skipping send")
             return False
 
         try:
@@ -132,11 +132,10 @@ class EmailService:
             self.smtp_client.send_message(msg)
             return True
 
-        except Exception as e:
+        except Exception:
             # Log a generic message only: recipient addresses must never
             # reach logs (CodeQL clear-text-logging). Correlate via SMTP logs.
             logger.exception("Failed to send email")
-            print(f"Failed to send email: {e}")
             return False
 
     def send_payslip_email(

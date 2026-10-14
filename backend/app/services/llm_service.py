@@ -4,14 +4,15 @@ AI-powered CV extraction, interview evaluation, and predictions
 """
 
 import json
-import logging
 import os
 from dataclasses import dataclass
 from typing import Any
 
+from app.core.logging_utils import get_logger
+
 from openai import OpenAI
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 try:
     import google.generativeai as genai
@@ -143,9 +144,8 @@ Return ONLY valid JSON matching the schema."""
                     unanswered_job_criteria=result.get("unanswered_job_criteria", []),
                     review_warnings=result.get("review_warnings", []),
                 )
-            except Exception as e:
+            except Exception:
                 logger.exception("OpenAI extraction failed")
-                print(f"OpenAI extraction failed: {e}")
                 return None
 
         elif self.use_gemini and self.gemini_client:
@@ -173,9 +173,8 @@ Return ONLY valid JSON matching the schema."""
                     unanswered_job_criteria=result.get("unanswered_job_criteria", []),
                     review_warnings=result.get("review_warnings", []),
                 )
-            except Exception as e:
+            except Exception:
                 logger.exception("Gemini extraction failed")
-                print(f"Gemini extraction failed: {e}")
                 return None
 
         return None

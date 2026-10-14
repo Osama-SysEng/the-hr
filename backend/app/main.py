@@ -12,9 +12,13 @@ from datetime import UTC, datetime
 from app.api import api_router
 from app.core.config import settings
 from app.core.database import close_db, init_db
+from app.core.logging_utils import get_logger, new_request_id, request_id_ctx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
+
+logger = get_logger("app.main")
+access_logger = get_logger("http.access")
 
 
 @asynccontextmanager
@@ -71,6 +75,30 @@ app.add_middleware(
 
 
 # -----------------------------------------------------------------------------
+# Request ID + Access Log (single line per request)
+# -----------------------------------------------------------------------------
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or new_request_id()
+    request_id_ctx.set(request_id)
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = round((time.perf_counter() - start) * 1000, 2)
+    response.headers["X-Request-ID"] = request_id
+    access_logger.info(
+        f"access: {request.method} {request.url.path} -> {response.status_code}",
+        extra={"fields": {
+            "event": "http.access",
+            "method": request.method,
+            "route": request.url.path,
+            "status": response.status_code,
+            "duration_ms": duration_ms,
+        }},
+    )
+    return response
+
+
+# -----------------------------------------------------------------------------
 # Rate Limiting (sliding window per IP+path, /health exempt)
 # -----------------------------------------------------------------------------
 def _rate_limit_per_minute() -> int:
@@ -121,6 +149,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
+    logger.exception("unhandled exception", extra={"fields": {"event": "http.error", "route": request.url.path}})
     return JSONResponse(
         status_code=500,
         content={

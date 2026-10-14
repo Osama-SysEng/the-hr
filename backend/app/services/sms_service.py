@@ -2,11 +2,12 @@
 The H.R - SMS Service using Twilio
 """
 
-import logging
 import os
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from app.core.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from twilio.rest import Client
@@ -29,9 +30,8 @@ class SMSService:
         try:
             message = self.client.messages.create(body=body, from_=self.phone_number, to=to)
             return message.sid
-        except Exception as e:
-            logger.exception("SMS send failed to %s", to)
-            print(f"SMS failed: {e}")
+        except Exception:
+            logger.exception("SMS send failed")
             return None
 
     def send_attendance_alert(self, phone: str, employee_name: str, status: str, date: str) -> str | None:

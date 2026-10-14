@@ -4,13 +4,14 @@ Biometric face recognition for attendance verification
 """
 
 import base64
-import logging
 from dataclasses import dataclass
 from typing import Any
 
+from app.core.logging_utils import get_logger
+
 import numpy as np
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _tag(value: object) -> str:
@@ -49,7 +50,7 @@ class FaceRecognitionService:
             self.face_recognition_lib = face_recognition
         except ImportError:
             self.face_recognition_lib = None
-            print("Warning: face_recognition library not available")
+            logger.warning("face_recognition library not available; biometric verification disabled")
 
         try:
             import cv2
@@ -57,7 +58,7 @@ class FaceRecognitionService:
             self.cv2 = cv2
         except ImportError:
             self.cv2 = None
-            print("Warning: OpenCV not available")
+            logger.warning("OpenCV not available; biometric verification disabled")
 
     def load_employee_face(self, employee_id: str, name: str, image_base64: str) -> bool:
         """
@@ -89,9 +90,8 @@ class FaceRecognitionService:
                 return True
 
             return False
-        except Exception as e:
+        except Exception:
             logger.exception("Error loading face for %s", _tag(employee_id))
-            print(f"Error loading face for {_tag(employee_id)}: {e}")
             return False
 
     def load_employee_face_from_file(self, employee_id: str, name: str, image_path: str) -> bool:
@@ -100,9 +100,8 @@ class FaceRecognitionService:
             with open(image_path, "rb") as f:
                 image_data = f.read()
             return self.load_employee_face(employee_id, name, base64.b64encode(image_data).decode())
-        except Exception as e:
-            logger.exception("Error loading face from file %s", image_path)
-            print(f"Error loading face from file {image_path}: {e}")
+        except Exception:
+            logger.exception("Error loading face from file")
             return False
 
     def recognize_face(self, image_base64: str) -> FaceRecognitionResult:
